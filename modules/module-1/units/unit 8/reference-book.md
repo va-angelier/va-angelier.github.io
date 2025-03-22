@@ -62,7 +62,7 @@ $dataset = [] //ex. initialised globally
 * #### **Add record**
 ```php
 function addRecord($title, $uri, $tags) {  
-    if (count($tags) > 5 || count($tags) < 1 {  
+    if (count($tags) > 5 || count($tags) < 1) {  
         return "Error: too many tags. Must be between 1 and 5";  
     }
 
@@ -74,7 +74,7 @@ function addRecord($title, $uri, $tags) {
         "accessed_at" => time()  
     ];
 
-    // *$dataset\[\] \= $record //Add record to our dataset*  
+    // $dataset[] = $record; //Add record to our dataset*  
 }
 ```
 * #### **Search by single hashtag**
