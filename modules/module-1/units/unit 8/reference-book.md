@@ -493,7 +493,7 @@ Textual Flowchart:
 4. Loop through each record in the dataset.  
 5. For each record, perform the following checks:  
 ◦ Check if the keyword exists (case-insensitive match) in record\["title"\].  
-◦ OR check if the keyword exists in record\["uri"\].  
+◦ OR check if the keyword exists in record\["tags"\].  
 ◦ If either condition is true:  
 ▪ Add the record to the results array.  
 6. After all records have been evaluated, return the results array.  
