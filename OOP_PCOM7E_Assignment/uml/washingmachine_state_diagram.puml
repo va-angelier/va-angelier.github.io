@@ -1,7 +1,6 @@
 @startuml
 title Washing Machine State Machine (after Rumbaugh et al., 2005, Ch.21)
 skinparam shadowing false
-skinparam state { BackgroundColor White; BorderColor Black }
 
 [*] --> Off
 Off --> Idle      : powerOn()
