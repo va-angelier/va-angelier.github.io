@@ -1,0 +1,32 @@
+@startuml
+title Robot State Machine with Low Battery & Charging
+skinparam shadowing false
+skinparam state {
+  BackgroundColor White
+  BorderColor Black
+}
+
+[*] --> OFF
+OFF --> Operational : powerOn()
+Operational --> OFF : powerOff()
+
+state Operational {
+  [*] --> IDLE
+  IDLE --> MOVING : planPath()/step()
+  MOVING --> IDLE : arrived()
+  IDLE --> MANIPULATING : pick()/place()
+  MANIPULATING --> IDLE : done()/cancel()
+  IDLE --> COMMUNICATING : speak()/display()
+  COMMUNICATING --> IDLE : done()
+  MOVING --> ERROR : obstacle/fault
+  MANIPULATING --> ERROR : graspFail
+  COMMUNICATING --> ERROR : deviceFail
+}
+
+Operational --> CHARGING : [battery < 10%]
+state CHARGING
+CHARGING --> IDLE : [battery >= 95%]
+state ERROR
+ERROR --> IDLE : recover()
+ERROR --> OFF  : criticalFailure()
+@enduml

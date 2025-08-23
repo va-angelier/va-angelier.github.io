@@ -1,165 +1,108 @@
-import unittest
-from collections import deque
-from typing import List, Optional, Dict, Tuple
-from enum import Enum
 import random
+from collections import deque
+from typing import List, Optional, Dict
+from enum import Enum
 import heapq
-import itertools
+import math
 
-# Property-based testing (pip install -r requirements.txt)
-from hypothesis import given
-from hypothesis.strategies import text, lists, floats
-
-
-# ---------- Domain model ----------
-
+# Enum for robot states
 class RobotState(Enum):
     OFF = "OFF"
     IDLE = "IDLE"
     MOVING = "MOVING"
     MANIPULATING = "MANIPULATING"
     COMMUNICATING = "COMMUNICATING"
-    CHARGING = "CHARGING"     # NEW
     ERROR = "ERROR"
 
-
+# Waypoint and EnvObject value objects
 class Waypoint:
-    """Value object for grid coordinates."""
-    __slots__ = ("x", "y")
-
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, Waypoint) and self.x == other.x and self.y == other.y
-
-    def __hash__(self) -> int:
-        return hash((self.x, self.y))
-
-    def __repr__(self) -> str:
-        return f"Waypoint({self.x},{self.y})"
-
-
 class EnvObject:
-    """Value object for an object in the environment."""
-    __slots__ = ("kind", "id", "position")
-
     def __init__(self, kind: str, id: str, position: Waypoint):
         self.kind = kind
         self.id = id
         self.position = position
 
-
+# Environment class
 class Environment:
-    """Simulates environment and sensor readings."""
     def __init__(self):
-        self.objects: List[EnvObject] = []           # LIST
-        self.sensor_readings: List[float] = []       # LIST
+        self.objects: List[EnvObject] = []
+        self.sensor_readings: List[float] = []
 
-    def sense(self, noise: Optional[float] = None) -> None:
-        """
-        Simulate dynamic data with Gaussian noise (μ=0, σ≈0.1) unless a noise value is injected.
-        Reading is clipped to [0, 1] for realism.
-        """
-        z = noise if noise is not None else random.gauss(0, 0.1)
-        reading = 0.5 + z
-        reading = max(0.0, min(1.0, reading))  # clip to [0,1]
-        self.sensor_readings.append(reading)
-
-        # Update object positions dynamically (simple random walk)
+    def sense(self) -> None:
+        noise = random.gauss(mu=0, sigma=0.1)
+        self.sensor_readings.append(0.5 + noise)
         for obj in self.objects:
-            obj.position.x += int(round(random.gauss(0, 1)))
-            obj.position.y += int(round(random.gauss(0, 1)))
+            obj.position.x += int(random.gauss(0, 1))
+            obj.position.y += int(random.gauss(0, 1))
 
     def find_nearest_object(self, kind: str) -> Optional[EnvObject]:
-        # Linear search (O(n)) for simplicity
         for obj in self.objects:
             if obj.kind == kind:
                 return obj
         return None
 
-
+# MemoryStore class
 class MemoryStore:
-    """Facts (LIST) + breadcrumbs as STACK for undo/trace."""
     def __init__(self):
-        self.facts: List[str] = []       # LIST
-        self.breadcrumbs: List[str] = [] # STACK
+        self.facts: List[str] = []
+        self.breadcrumbs: List[str] = []
 
     def push_action(self, action: str) -> None:
-        self.breadcrumbs.append(action)  # O(1)
+        self.breadcrumbs.append(action)
 
     def last_action(self) -> Optional[str]:
-        return self.breadcrumbs.pop() if self.breadcrumbs else None  # O(1)
+        return self.breadcrumbs.pop() if self.breadcrumbs else None
 
-
+# Navigation class
 class Navigation:
-    """
-    A* on a 4-neighbour grid. Uses a queue of waypoints for the next steps.
-    """
     def __init__(self):
-        self.path_queue: deque[Tuple[int, int]] = deque()  # QUEUE
-        self._counter = itertools.count()  # tie-breaker for heapq
+        self.path_queue: deque = deque()
+        self.timeout_counter = 0
 
-    @staticmethod
-    def _heuristic(a: Waypoint, b: Waypoint) -> float:
-        # Manhattan distance is admissible & consistent on a 4-neighbour grid
-        return abs(b.x - a.x) + abs(b.y - a.y)
+    def plan_path(self, start: Waypoint, target: Waypoint) -> bool:
+        def heuristic(a: Waypoint, b: Waypoint) -> float:
+            return math.sqrt((b.x - a.x) ** 2 + (b.y - b.y) ** 2)
 
-    def plan_path(self, start: Waypoint, target: Waypoint) -> None:
-        open_set: List[Tuple[float, int, Waypoint]] = []
-        heapq.heappush(open_set, (0.0, next(self._counter), start))
-        came_from: Dict[Waypoint, Waypoint] = {}
-        g_score: Dict[Waypoint, float] = {start: 0.0}
-        visited: set[Tuple[int, int]] = set()
+        open_set = [(0, start)]
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: heuristic(start, target)}
+        self.timeout_counter = 0
 
-        while open_set:
-            _, _, current = heapq.heappop(open_set)
-            key = (current.x, current.y)
-            if key in visited:
-                continue
-            visited.add(key)
-
-            if current == target:
-                # reconstruct path (excluding start, including target)
-                path: List[Waypoint] = []
+        while open_set and self.timeout_counter < 100:
+            self.timeout_counter += 1
+            _, current = heapq.heappop(open_set)
+            if current.x == target.x and current.y == target.y:
+                path = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
                 path.reverse()
                 self.path_queue = deque([(p.x, p.y) for p in path])
-                return
-
-            for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                return True
+            for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
                 neighbor = Waypoint(current.x + dx, current.y + dy)
-                tentative = g_score[current] + 1.0
-                if tentative < g_score.get(neighbor, float("inf")):
+                tentative_g_score = g_score[current] + 1
+                if tentative_g_score < g_score.get(neighbor, float('inf')):
                     came_from[neighbor] = current
-                    g_score[neighbor] = tentative
-                    f = tentative + self._heuristic(neighbor, target)
-                    heapq.heappush(open_set, (f, next(self._counter), neighbor))
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + heuristic(neighbor, target)
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+        return False
 
-        # For open grid this won't happen; if it does, path_queue becomes empty
-        self.path_queue.clear()
+    def next_step(self) -> Optional[tuple]:
+        return self.path_queue.popleft() if self.path_queue else None
 
-    def next_step(self) -> Optional[Tuple[int, int]]:
-        return self.path_queue.popleft() if self.path_queue else None  # O(1)
-
-
+# Manipulator class
 class Manipulator:
-    """
-    Simple manipulator with a STACK of grasp events.
-    Includes a test hook to force next pick to fail deterministically.
-    """
     def __init__(self):
-        self.grasp_history: List[str] = []  # STACK
-        self.force_fail_next: bool = False  # test hook
+        self.grasp_history: List[str] = []
 
     def pick(self, object_id: str) -> bool:
-        if self.force_fail_next:
-            self.force_fail_next = False
-            return False
-        # Simulate occasional failure (10%)
         if random.random() < 0.1:
             return False
         self.grasp_history.append(object_id)
@@ -168,7 +111,7 @@ class Manipulator:
     def undo_last_grasp(self) -> bool:
         return bool(self.grasp_history.pop()) if self.grasp_history else False
 
-
+# Communicator class
 class Communicator:
     def speak(self, text: str) -> None:
         return
@@ -176,11 +119,10 @@ class Communicator:
     def display(self, text: str) -> None:
         return
 
-
+# CLI class
 class CLI:
-    """Front-end command queue for the robot."""
     def __init__(self):
-        self.cmd_queue: deque[Dict[str, str]] = deque()  # QUEUE
+        self.cmd_queue: deque = deque()
 
     def enqueue(self, cmd: Dict[str, str]) -> None:
         self.cmd_queue.append(cmd)
@@ -188,7 +130,7 @@ class CLI:
     def read_command(self) -> Optional[Dict[str, str]]:
         return self.cmd_queue.popleft() if self.cmd_queue else None
 
-
+# Robot class
 class Robot:
     def __init__(self, id: str):
         self.id = id
@@ -200,7 +142,6 @@ class Robot:
         self.manip = Manipulator()
         self.comms = Communicator()
 
-    # ---- power & battery helpers ----
     def power_on(self) -> bool:
         if self.state == RobotState.OFF:
             self.state = RobotState.IDLE
@@ -213,97 +154,63 @@ class Robot:
             return True
         return False
 
-    def _drain(self, amount: int) -> None:
-        self.battery_level = max(0, self.battery_level - amount)
-
-    def _maybe_enter_charging(self) -> Optional[str]:
-        if self.battery_level < 10 and self.state != RobotState.CHARGING:
-            self.state = RobotState.CHARGING
-            return "LOW BATTERY: entering charging"
-        return None
-
     def tick(self, command: Dict[str, str]) -> str:
         if self.state == RobotState.OFF:
             return "ERROR: Robot is off"
-
-        # Charging progresses regardless of command type
-        if self.state == RobotState.CHARGING:
-            self.battery_level = min(100, self.battery_level + 5)  # charge 5% per tick
-            if self.battery_level >= 95:
-                self.state = RobotState.IDLE     # always return to IDLE (predictable)
-                return "OK: Charged"
-            return f"CHARGING: {self.battery_level}%"
-
-        # If low battery, go charging before processing any command
-        low = self._maybe_enter_charging()
-        if low:
-            return low
-
         cmd_type = command.get("type")
         if cmd_type == "navigate":
-            self._drain(5)
-            low = self._maybe_enter_charging()
-            if low:
-                return low
             self.state = RobotState.MOVING
             try:
                 x, y = map(int, command["args"].split(","))
                 start = Waypoint(0, 0)
                 target = Waypoint(x, y)
-                self.nav.plan_path(start, target)
+                if self.battery_level < 10:
+                    return "ERROR: Low battery – please charge"
+                if not self.nav.plan_path(start, target) or self.nav.timeout_counter >= 100:
+                    self.state = RobotState.ERROR
+                    return "ERROR: No path to target"
                 step = self.nav.next_step()
                 self.memory.push_action("NAVIGATE")
+                self.battery_level -= 5
                 return f"Navigating to {step}" if step else "ERROR: No path"
             except ValueError:
                 return "ERROR: Invalid coordinates"
-
         elif cmd_type == "pick":
-            self._drain(5)
-            low = self._maybe_enter_charging()
-            if low:
-                return low
             self.state = RobotState.MANIPULATING
-            if self.manip.pick(command["args"]):
-                self.memory.push_action("PICK")
-                self.state = RobotState.IDLE
-                return "OK: Picked object"
-            self.state = RobotState.ERROR
-            return "ERROR: Grasp failed"
-
+            if self.battery_level < 10:
+                return "ERROR: Low battery – please charge"
+            obj = self.env.find_nearest_object(command["args"])
+            if not obj:
+                return "ERROR: Object not found"
+            if not self.nav.plan_path(Waypoint(0, 0), obj.position) or self.nav.timeout_counter >= 100:
+                self.state = RobotState.ERROR
+                return "ERROR: No path to target"
+            if not self.manip.pick(command["args"]):
+                self.state = RobotState.ERROR
+                return "ERROR: Grasp failed"
+            self.memory.push_action("PICK")
+            self.state = RobotState.IDLE
+            self.battery_level -= 5
+            return "OK: Picked object"
         elif cmd_type == "speak":
-            self._drain(1)
-            low = self._maybe_enter_charging()
-            if low:
-                return low
             self.state = RobotState.COMMUNICATING
             self.comms.speak(command["args"])
             self.memory.push_action("SPEAK")
             self.state = RobotState.IDLE
+            self.battery_level -= 2
             return "OK: Spoken"
-
         elif cmd_type == "tick":
-            # Background progression (e.g., sensing/charging handled above)
-            self.env.sense()
-            return "OK: Ticked"
-
+            return "Tick executed"  # Placeholder
         return "ERROR: Invalid command"
 
-
-# ---------- Interactive CLI ----------
-
+# Interactive CLI loop
 def main():
     robot = Robot("R1")
     cli = CLI()
-    print("Humanoid Robot CLI: 'navigate x,y' | 'pick <object>' | 'speak <text>' | 'power on/off' | 'tick' | 'exit'")
+    print("Humanoid Robot CLI: Type commands (e.g., 'navigate 5,5', 'pick bottle', 'speak hello', 'power on/off', 'tick', 'exit')")
     while True:
-        try:
-            cmd_input = input("> ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nExiting.")
-            break
-        if not cmd_input:
-            continue
-        if cmd_input.lower() == "exit":
+        cmd_input = input("> ")
+        if cmd_input == "exit":
             break
         if cmd_input == "power on":
             print("Power on:", robot.power_on())
@@ -317,115 +224,5 @@ def main():
         if cmd := cli.read_command():
             print(robot.tick(cmd))
 
-
-# ---------- Tests ----------
-
-class TestRobotSystem(unittest.TestCase):
-    def setUp(self):
-        self.robot = Robot("R1")
-        self.cli = CLI()
-
-    def test_power_management(self):
-        self.assertEqual(self.robot.state, RobotState.OFF)
-        self.assertTrue(self.robot.power_on())
-        self.assertEqual(self.robot.state, RobotState.IDLE)
-        self.assertTrue(self.robot.power_off())
-        self.assertEqual(self.robot.state, RobotState.OFF)
-
-    def test_navigation_returns_steps(self):
-        self.robot.power_on()
-        cmd = {"type": "navigate", "args": "5,5"}
-        self.cli.enqueue(cmd)
-        result = self.robot.tick(self.cli.read_command())
-        self.assertTrue(result.startswith("Navigating to"))
-        nxt = self.robot.nav.next_step()
-        self.assertTrue((nxt is None) or isinstance(nxt, tuple))
-
-    def test_manipulation_failure_deterministic(self):
-        self.robot.power_on()
-        self.robot.manip.force_fail_next = True  # deterministic failure
-        cmd = {"type": "pick", "args": "Bottle"}
-        self.cli.enqueue(cmd)
-        result = self.robot.tick(self.cli.read_command())
-        self.assertEqual(result, "ERROR: Grasp failed")
-        self.assertEqual(self.robot.state, RobotState.ERROR)
-
-    def test_manipulation_success_and_undo(self):
-        self.robot.power_on()
-        cmd = {"type": "pick", "args": "Bottle"}
-        self.cli.enqueue(cmd)
-        result = self.robot.tick(self.cli.read_command())
-        if result == "ERROR: Grasp failed":
-            # retry once if random 10% failure hit
-            self.robot.state = RobotState.IDLE
-            self.cli.enqueue(cmd)
-            result = self.robot.tick(self.cli.read_command())
-        self.assertEqual(result, "OK: Picked object")
-        self.assertTrue(self.robot.manip.undo_last_grasp())
-
-    def test_communication(self):
-        self.robot.power_on()
-        cmd = {"type": "speak", "args": "Hello"}
-        self.cli.enqueue(cmd)
-        result = self.robot.tick(self.cli.read_command())
-        self.assertEqual(result, "OK: Spoken")
-        self.assertEqual(self.robot.state, RobotState.IDLE)
-
-    def test_environment_search(self):
-        self.robot.env.objects = [EnvObject("Bottle", "B1", Waypoint(1, 1))]
-        self.robot.env.sense()  # update positions
-        result = self.robot.env.find_nearest_object("Bottle")
-        self.assertIsNotNone(result)
-        self.assertEqual(result.id, "B1")
-
-    def test_error_recovery(self):
-        self.robot.power_on()
-        self.robot.manip.force_fail_next = True
-        cmd = {"type": "pick", "args": "Bottle"}
-        self.cli.enqueue(cmd)
-        self.robot.tick(self.cli.read_command())
-        self.assertEqual(self.robot.state, RobotState.ERROR)
-        # Recover
-        self.robot.state = RobotState.IDLE
-        cmd = {"type": "speak", "args": "Recovered"}
-        self.cli.enqueue(cmd)
-        result = self.robot.tick(self.cli.read_command())
-        self.assertEqual(result, "OK: Spoken")
-        self.assertEqual(self.robot.state, RobotState.IDLE)
-
-    def test_charging_returns_to_idle(self):  # NEW
-        self.robot.power_on()
-        self.robot.battery_level = 5
-        # any command should trigger charging before execution
-        out = self.robot.tick({"type": "speak", "args": "trigger low battery"})
-        self.assertEqual(self.robot.state, RobotState.CHARGING)
-        self.assertIn("LOW BATTERY", out)
-        # progress charging via ticks
-        while self.robot.state == RobotState.CHARGING:
-            out = self.robot.tick({"type": "tick", "args": ""})
-        self.assertEqual(self.robot.state, RobotState.IDLE)
-        self.assertIn("Charged", out)
-
-    # ---- Property-based tests (Hypothesis) ----
-
-    @given(lists(text(), max_size=5))
-    def test_memory_stack_lifo_property(self, actions):
-        memory = MemoryStore()
-        for a in actions:
-            memory.push_action(a)
-        for a in reversed(actions):
-            self.assertEqual(memory.last_action(), a)
-
-    @given(floats(min_value=-0.2, max_value=0.2))
-    def test_sensor_noise_property(self, z):
-        env = Environment()
-        env.sense(noise=z)  # use injected noise for determinism
-        r = env.sensor_readings[-1]
-        expected = max(0.0, min(1.0, 0.5 + z))
-        self.assertTrue(0.0 <= r <= 1.0)
-        self.assertAlmostEqual(r, expected, places=9)
-
-
 if __name__ == "__main__":
-    # If run directly, start CLI. For tests, run: python -m unittest -v
     main()

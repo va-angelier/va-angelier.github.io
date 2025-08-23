@@ -1,5 +1,5 @@
 @startuml
-title Pick command — success / failure
+title Pick command — OFF / Low battery / Object not found / No path / Grasp fail
 
 actor User
 participant CLI
@@ -10,39 +10,63 @@ participant Manipulator
 participant MemoryStore
 
 User -> CLI : type "pick bottle"
-activate CLI
 CLI -> CLI : enqueue(Command)
 CLI -> Robot : deliver(Command)
-deactivate CLI
-
 activate Robot
-Robot -> Environment : sense()
-activate Environment
-Environment --> Robot : sensor snapshot
-deactivate Environment
 
-Robot -> Navigation : planPath(target)
-activate Navigation
-Navigation --> Robot : path planned
-loop until at target
-  Robot -> Navigation : nextStep()
-  Navigation --> Robot : waypoint
+alt Robot OFF
+  Robot --> CLI : "Power on first"
+
+else Robot ON
+  alt battery < 10%
+    Robot --> CLI : "LOW BATTERY: entering charging"
+    opt Charging progression
+      loop while state == CHARGING
+        CLI -> Robot : tick
+        Robot --> CLI : "CHARGING: xx%"
+      end
+      Robot --> CLI : "OK: Charged"
+    end
+  else battery OK
+    Robot -> Environment : sense()
+    activate Environment
+    Environment --> Robot : sensor snapshot
+    deactivate Environment
+
+    alt Object found
+      Robot -> Navigation : planPath(targetPos)
+      activate Navigation
+      Navigation --> Robot : path planned
+      loop until at target
+        Robot -> Navigation : nextStep()
+        Navigation --> Robot : Waypoint
+      end
+      deactivate Navigation
+
+      alt No path / timeout
+        Robot --> CLI : "No path to target"
+      else Path OK
+        Robot -> Manipulator : pick(objectId)
+        activate Manipulator
+        alt Grasp success
+          Manipulator --> Robot : ok
+          deactivate Manipulator
+          Robot -> MemoryStore : pushAction(PICK)
+          activate MemoryStore
+          MemoryStore --> Robot : ack
+          deactivate MemoryStore
+          Robot --> CLI : "OK: picked"
+        else Grasp fail
+          Manipulator --> Robot : fail
+          deactivate Manipulator
+          Robot --> CLI : "ERROR: grasp failed"
+        end
+      end
+    else Object not found
+      Robot --> CLI : "Object not found"
+    end
+  end
 end
-deactivate Navigation
 
-Robot -> Manipulator : pick(objectId)
-activate Manipulator
-Manipulator --> Robot : success/fail
-deactivate Manipulator
-
-alt success
-  Robot -> MemoryStore : pushAction(PICK)
-  activate MemoryStore
-  MemoryStore --> Robot : ack
-  deactivate MemoryStore
-  Robot -> CLI : "OK: picked"
-else fail
-  Robot -> CLI : "ERROR: grasp failed"
-end
 deactivate Robot
 @enduml
