@@ -26,5 +26,6 @@ python OOP_PCOM7E_Assignment/robot_system.py
 
 # Robot diagrams
 plantuml -tpng OOP_PCOM7E_Assignment/uml/*.puml
+
 # Washing machine (e-portfolio)
 plantuml -tpng ePortfolio_Unit4/uml/washing_machine_state.puml
