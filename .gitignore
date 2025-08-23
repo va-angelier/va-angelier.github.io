@@ -1,6 +1,5 @@
 
 .idea/
-
 .DS_Store
-.hypotheses/
-__pycache__/
+.hypothesis/
+OOP_PCOM7E_Assignment/__pycache__/
