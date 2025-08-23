@@ -1,0 +1,48 @@
+@startuml
+title Pick command — success / failure
+
+actor User
+participant CLI
+participant Robot
+participant Environment
+participant Navigation
+participant Manipulator
+participant MemoryStore
+
+User -> CLI : type "pick bottle"
+activate CLI
+CLI -> CLI : enqueue(Command)
+CLI -> Robot : deliver(Command)
+deactivate CLI
+
+activate Robot
+Robot -> Environment : sense()
+activate Environment
+Environment --> Robot : sensor snapshot
+deactivate Environment
+
+Robot -> Navigation : planPath(target)
+activate Navigation
+Navigation --> Robot : path planned
+loop until at target
+  Robot -> Navigation : nextStep()
+  Navigation --> Robot : waypoint
+end
+deactivate Navigation
+
+Robot -> Manipulator : pick(objectId)
+activate Manipulator
+Manipulator --> Robot : success/fail
+deactivate Manipulator
+
+alt success
+  Robot -> MemoryStore : pushAction(PICK)
+  activate MemoryStore
+  MemoryStore --> Robot : ack
+  deactivate MemoryStore
+  Robot -> CLI : "OK: picked"
+else fail
+  Robot -> CLI : "ERROR: grasp failed"
+end
+deactivate Robot
+@enduml

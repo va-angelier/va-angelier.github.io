@@ -1,0 +1,114 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "Robot System" {
+
+  ' ===== Value Objects / Entities / Enums =====
+  class Waypoint <<value object>> {
+    + x: Integer
+    + y: Integer
+  }
+
+  class Command <<value object>> {
+    + type: CmdType
+    + args: Map<String, String>
+  }
+
+  class EnvObject <<entity>> {
+    + id: String
+    + kind: String
+    + position: Waypoint
+  }
+
+  enum RobotState {
+    OFF
+    IDLE
+    MOVING
+    MANIPULATING
+    COMMUNICATING
+    CHARGING
+    ERROR
+  }
+
+  enum CmdType {
+    NAVIGATE
+    PICK
+    SPEAK
+    TICK
+  }
+
+  ' ===== Interfaces =====
+  interface IPlanner {
+    + planPath(start: Waypoint, target: Waypoint): void
+    + nextStep(): Waypoint
+  }
+
+  interface ISensor {
+    + sense(): void
+  }
+
+  ' ===== Core Classes =====
+  class Robot {
+    - id: String
+    - position: Waypoint
+    - state: RobotState
+    - batteryLevel: Integer
+    + powerOn(): Boolean
+    + powerOff(): Boolean
+    + tick(cmd: Command): String
+  }
+
+  class Navigation {
+    - pathQueue: Queue<Waypoint>
+    + planPath(start: Waypoint, target: Waypoint): void
+    + nextStep(): Waypoint
+  }
+
+  class Manipulator {
+    - graspHistory: Stack<String>
+    + pick(objectId: String): Boolean
+    + undoLastGrasp(): Boolean
+  }
+
+  class Communicator {
+    + speak(text: String): void
+    + display(text: String): void
+  }
+
+  class Environment {
+    - objects: List<EnvObject>
+    - sensorReadings: List<Float>
+    + sense(): void
+    + findNearestObject(kind: String): EnvObject
+  }
+
+  class MemoryStore {
+    - facts: List<String>
+    - breadcrumbs: Stack<String>
+    + pushAction(a: String): void
+    + lastAction(): String
+  }
+
+  class CLI {
+    - cmdQueue: Queue<Command>
+    + enqueue(cmd: Command): void
+    + readCommand(): Command
+  }
+
+  ' ===== Realizations =====
+  Navigation ..|> IPlanner
+  Environment ..|> ISensor
+
+  ' ===== Composition (Robot owns subsystems) =====
+  Robot "1" *-- "1" Navigation   : nav
+  Robot "1" *-- "1" Manipulator  : manip
+  Robot "1" *-- "1" Communicator : comms
+  Robot "1" *-- "1" Environment  : env
+  Robot "1" *-- "1" MemoryStore  : memory
+
+  ' ===== Associations =====
+  Environment "1" *-- "*" EnvObject : contains
+  CLI --> Robot : sends Command
+}
+@enduml

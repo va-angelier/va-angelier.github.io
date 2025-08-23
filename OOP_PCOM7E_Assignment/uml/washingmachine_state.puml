@@ -1,0 +1,17 @@
+@startuml "washingmachine_states"
+[*] --> Off
+Off --> Idle : powerOn()
+Idle --> Off : powerOff()
+Idle --> Filling : startCycle()
+Filling --> Washing : waterLevelOk()
+Washing --> Rinsing : washComplete()
+Rinsing --> Spinning : rinseComplete()
+Spinning --> Idle : spinComplete()
+Idle --> Error : faultDetected()
+Filling --> Error : waterFailure()
+Washing --> Error : motorFailure()
+Rinsing --> Error : drainFailure()
+Spinning --> Error : balanceFailure()
+Error --> Idle : reset()
+Error --> Off : criticalFailure()
+@enduml

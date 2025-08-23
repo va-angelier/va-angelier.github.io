@@ -1,0 +1,4 @@
+# file: /Users/victorangelier/Documents/Prive/Victor/Essex/va-angelier.github.io/OOP_PCOM7E_Assignment/robot_system.py
+# hypothesis_version: 6.138.2
+
+[-0.2, 0.0, 0.1, 0.2, 0.5, 1.0, 100, '\nExiting.', ',', '5,5', '> ', 'B1', 'Bottle', 'CHARGING', 'COMMUNICATING', 'Charged', 'ERROR', 'ERROR: Grasp failed', 'ERROR: No path', 'ERROR: Robot is off', 'Hello', 'IDLE', 'LOW BATTERY', 'MANIPULATING', 'MOVING', 'NAVIGATE', 'Navigating to', 'OFF', 'OK: Charged', 'OK: Picked object', 'OK: Spoken', 'OK: Ticked', 'PICK', 'Power off:', 'Power on:', 'R1', 'Recovered', 'SPEAK', '__main__', 'args', 'exit', 'id', 'inf', 'kind', 'navigate', 'pick', 'position', 'power off', 'power on', 'speak', 'tick', 'trigger low battery', 'type', 'x', 'y']
