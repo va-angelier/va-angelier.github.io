@@ -1,82 +1,66 @@
 @startuml
-' Activity diagram with swimlanes, guards, and exception flows
+' Humanoid Robot — Pick flow (OFF / object-not-found / low-battery / no-path / grasp-fail)
 
-skinparam activity {
-  BackgroundColor White
-  BorderColor Black
-}
-skinparam shadowing false
+|User|
+start
+:Type "pick <objectKind>" in CLI;
 
-partition "User" as U {
-  start
-  :Type "pick <objectKind>" in CLI;
-}
+|CLI|
+:Enqueue Command;
 
-partition "CLI" as C {
-  :Enqueue Command;
-}
+|Robot|
+:Read Command;
+if (state == OFF) then (yes)
+  :Reply: "Power on first";
+  stop
+else (no)
+endif
+:Environment.sense();
 
-partition "Robot" as R1 {
-  :Read Command;
-  if (state == OFF) then (yes)
-    :Reply: "Power on first";
+|Environment|
+:Collect sensor data;
+
+|Robot|
+if (objectFound?) then (yes)
+  if (battery < 10%) then (yes)
+    :Reply: "Low battery – please charge";
     stop
   else (no)
   endif
-  :Environment.sense();
-}
+else (no)
+  :Reply: "Object not found";
+  stop
+endif
 
-partition "Environment" as E {
-  :Collect sensor data;
-}
+|Navigation|
+:planPath(targetPos);
+repeat
+  :nextStep();
+repeat while (not at object)
 
-partition "Robot" as R2 {
-  if (objectFound) then (yes)
-    if (battery < 10%) then (yes)
-      :Reply: "Low battery – please charge";
-      stop
-    else (no)
-    endif
-  else (no)
-    :Reply: "Object not found";
-    stop
-  endif
-}
+|Robot|
+if (no path or timeout) then (yes)
+  :state = ERROR;
+  :Notify: "No path to target";
+  stop
+else (no)
+endif
+:state = MANIPULATING;
 
-partition "Navigation" as N {
-  :planPath(targetPos);
-  repeat
-    :nextStep();
-  repeat while (not at object)
-}
-
-partition "Robot" as R3 {
-  if (no path or timeout) then (yes)
-    :state = ERROR;
-    :Notify: "No path to target";
-    stop
-  else (no)
-  endif
-  :state = MANIPULATING;
-}
-
-partition "Manipulator" as M {
-  :pick(objectId);
-  if (graspSuccess) then (yes)
-  else (no)
-    :state = ERROR;
-    :Notify: "Grasp failed";
-    stop
-  endif
-}
-
-partition "MemoryStore" as MS {
+|Manipulator|
+:pick(objectId);
+if (graspSuccess?) then (yes)
+  |MemoryStore|
   :pushAction(PICK);
-}
 
-partition "Robot" as R4 {
+  |Robot|
   :state = IDLE;
   :Ack success to CLI;
   stop
-}
+else (no)
+  |Robot|
+  :state = ERROR;
+  :Notify: "Grasp failed";
+  stop
+endif
 @enduml

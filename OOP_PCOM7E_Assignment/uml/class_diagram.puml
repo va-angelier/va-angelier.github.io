@@ -4,18 +4,12 @@ skinparam classAttributeIconSize 0
 
 package "Robot System" {
 
-  ' ===== Value Objects / Entities / Enums =====
-  class Waypoint <<value object>> {
+  class Waypoint {
     + x: Integer
     + y: Integer
   }
 
-  class Command <<value object>> {
-    + type: CmdType
-    + args: Map<String, String>
-  }
-
-  class EnvObject <<entity>> {
+  class EnvObject {
     + id: String
     + kind: String
     + position: Waypoint
@@ -38,17 +32,11 @@ package "Robot System" {
     TICK
   }
 
-  ' ===== Interfaces =====
-  interface IPlanner {
-    + planPath(start: Waypoint, target: Waypoint): void
-    + nextStep(): Waypoint
+  class Command {
+    + type: CmdType
+    + args: Map<String,String>
   }
 
-  interface ISensor {
-    + sense(): void
-  }
-
-  ' ===== Core Classes =====
   class Robot {
     - id: String
     - position: Waypoint
@@ -61,7 +49,7 @@ package "Robot System" {
 
   class Navigation {
     - pathQueue: Queue<Waypoint>
-    + planPath(start: Waypoint, target: Waypoint): void
+    + planPath(start: Waypoint, target: Waypoint)
     + nextStep(): Waypoint
   }
 
@@ -96,18 +84,12 @@ package "Robot System" {
     + readCommand(): Command
   }
 
-  ' ===== Realizations =====
-  Navigation ..|> IPlanner
-  Environment ..|> ISensor
+  Robot "1" *-- "1" Navigation
+  Robot "1" *-- "1" Manipulator
+  Robot "1" *-- "1" Communicator
+  Robot "1" *-- "1" Environment
+  Robot "1" *-- "1" MemoryStore
 
-  ' ===== Composition (Robot owns subsystems) =====
-  Robot "1" *-- "1" Navigation   : nav
-  Robot "1" *-- "1" Manipulator  : manip
-  Robot "1" *-- "1" Communicator : comms
-  Robot "1" *-- "1" Environment  : env
-  Robot "1" *-- "1" MemoryStore  : memory
-
-  ' ===== Associations =====
   Environment "1" *-- "*" EnvObject : contains
   CLI --> Robot : sends Command
 }

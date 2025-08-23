@@ -1,10 +1,5 @@
 @startuml
 title Robot State Machine with Low Battery & Charging
-skinparam shadowing false
-skinparam state {
-  BackgroundColor White
-  BorderColor Black
-}
 
 [*] --> OFF
 OFF --> Operational : powerOn()
@@ -26,6 +21,7 @@ state Operational {
 Operational --> CHARGING : [battery < 10%]
 state CHARGING
 CHARGING --> IDLE : [battery >= 95%]
+
 state ERROR
 ERROR --> IDLE : recover()
 ERROR --> OFF  : criticalFailure()

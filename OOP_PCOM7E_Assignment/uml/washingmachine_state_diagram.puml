@@ -1,0 +1,45 @@
+@startuml
+title Washing Machine State Machine (after Rumbaugh et al., 2005, Ch.21)
+skinparam shadowing false
+skinparam state { BackgroundColor White; BorderColor Black }
+
+[*] --> Off
+Off --> Idle      : powerOn()
+Idle --> Off      : powerOff()
+
+Idle --> Filling  : startCycle()
+Filling : entry / openInlet()
+Filling : do    / fillToLevel()
+Filling : exit  / closeInlet()
+
+Filling --> Washing : waterLevelOk()
+Washing : entry / startDrum()
+Washing : do    / washProgram()
+Washing : exit  / stopDrum()
+
+Washing --> Rinsing : washComplete()
+Rinsing : entry / openInlet()
+Rinsing : do    / rinseProgram()
+Rinsing : exit  / closeInlet()
+
+Rinsing --> Spinning : rinseComplete()
+Spinning : entry / lockDoor()
+Spinning : do    / spinProgram()
+Spinning : exit  / unlockDoor()
+
+Spinning --> Idle : spinComplete()
+
+' Faults
+Idle --> Error     : faultDetected()
+Filling --> Error  : waterFailure()
+Washing --> Error  : motorFailure()
+Rinsing --> Error  : drainFailure()
+Spinning --> Error : balanceFailure()
+
+state Error
+Error : entry / alarmOn()
+Error : do    / diagnose()
+Error : exit  / alarmOff()
+Error --> Idle : reset()
+Error --> Off  : criticalFailure()
+@enduml
