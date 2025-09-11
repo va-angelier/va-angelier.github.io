@@ -1,78 +1,92 @@
 import unittest
-from hypothesis import given, strategies as st
-from robot_system import Robot, RobotState, CLI, CmdType, Environment
+from robot_system import Robot, CLI, RobotState, Waypoint, EnvObject
+
 
 class TestRobotSystem(unittest.TestCase):
     def setUp(self):
         self.robot = Robot("R1")
         self.cli = CLI()
 
-    def test_power_cycle(self):
+    def test_power_management(self):
+        print("Debug: Testing power management")
         self.assertEqual(self.robot.state, RobotState.OFF)
         self.assertTrue(self.robot.power_on())
         self.assertEqual(self.robot.state, RobotState.IDLE)
         self.assertTrue(self.robot.power_off())
         self.assertEqual(self.robot.state, RobotState.OFF)
 
-    def test_charging_flow(self):
+    def test_pick_low_battery(self):
+        print("Debug: Testing pick with low battery")
         self.robot.power_on()
         self.robot.battery_level = 5
-        msg = self.robot.tick({"type": CmdType.SPEAK.value, "args":"hi"})
-        self.assertIn("LOW BATTERY", msg)
-        self.assertEqual(self.robot.state, RobotState.CHARGING)
-        for _ in range(10):
-            out = self.robot.tick({"type": CmdType.TICK.value})
-            if "OK: Charged" in out:
-                break
+        cmd = {"type": "pick", "args": "Bottle"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "ERROR: Low battery – please charge")
+        self.assertEqual(self.robot.state, RobotState.IDLE)
+
+    def test_pick_object_not_found(self):
+        print("Debug: Testing pick with object not found")
+        self.robot.power_on()
+        cmd = {"type": "pick", "args": "Bottle"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "ERROR: Object not found")
+        self.assertEqual(self.robot.state, RobotState.IDLE)
+
+    def test_pick_timeout(self):
+        print("Debug: Testing pick with timeout")
+        self.robot.power_on()
+        self.robot.env.objects = [EnvObject("Bottle", "B1",
+                                          Waypoint(1000, 1000))]
+        self.robot.nav.timeout_counter = 1000
+        cmd = {"type": "pick", "args": "Bottle"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "ERROR: No path to target")
+        self.assertEqual(self.robot.state, RobotState.ERROR)
+
+    def test_pick_success(self):
+        print("Debug: Testing pick success")
+        self.robot.power_on()
+        self.robot.env.objects = [EnvObject("Bottle", "B1",
+                                          Waypoint(1, 1))]
+        cmd = {"type": "pick", "args": "Bottle"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "OK: Picked object")
         self.assertEqual(self.robot.state, RobotState.IDLE)
 
     def test_navigation(self):
+        print("Debug: Testing navigation")
         self.robot.power_on()
-        out = self.robot.tick({"type": CmdType.NAVIGATE.value, "args":"2,2"})
-        self.assertTrue(out.startswith("Navigating to"))
-        self.assertEqual(self.robot.state, RobotState.MOVING)
-
-    def test_pick_success_and_undo(self):
-        self.robot.power_on()
-        out = self.robot.tick({"type": CmdType.PICK.value, "args":"Bottle"})
-        self.assertEqual(out, "OK: Picked object")
-        self.assertTrue(self.robot.manip.undo_last_grasp())
-
-    def test_pick_failure(self):
-        self.robot.power_on()
-        self.robot.manip.force_fail_next = True
-        out = self.robot.tick({"type": CmdType.PICK.value, "args":"Box"})
-        self.assertEqual(out, "ERROR: Grasp failed")
-        self.assertEqual(self.robot.state, RobotState.ERROR)
-
-    def test_environment_clip(self):
-        env = Environment()
-        env.sense(noise=10.0)
-        self.assertLessEqual(env.sensor_readings[-1], 1.0)
-
-    def test_navigation_ticks_progress_and_arrive(self):
-        self.robot.power_on()
-        # Navigeren verplaatst niet direct meer; alleen bevestigen van doel.
-        out = self.robot.tick({"type": "navigate", "args": "0,3"})
-        self.assertEqual(out, "Navigating to (0, 3)")
-        # Eerste tick: eerste stap
-        out = self.robot.tick({"type": "tick"})
-        self.assertTrue(out.startswith("Step to "), f"Unexpected: {out}")
-        # Ticks totdat we 'Arrived' zien (max 10 om infinite loops te voorkomen)
-        for _ in range(10):
-            out = self.robot.tick({"type": "tick"})
-            if out == "Arrived":
-                break
-        self.assertEqual(out, "Arrived")
+        cmd = {"type": "navigate", "args": "5,5"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertTrue(result.startswith("Navigating to"))
         self.assertEqual(self.robot.state, RobotState.IDLE)
 
-    @given(st.lists(st.text(), max_size=5))
-    def test_memory_stack_lifo(self, xs):
-        r = Robot("R2"); r.power_on()
-        for a in xs: r.memory.push_action(a)
-        for a in reversed(xs):
-            if xs:
-                self.assertEqual(r.memory.last_action(), a)
+    def test_navigation_during_manipulating(self):
+        print("Debug: Testing navigation during manipulation")
+        self.robot.power_on()
+        self.robot.state = RobotState.MANIPULATING
+        cmd = {"type": "navigate", "args": "5,5"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "ERROR: Cannot navigate, robot is busy")
+        self.assertEqual(self.robot.state, RobotState.IDLE)
+
+    def test_tick_command(self):
+        print("Debug: Testing tick command")
+        self.robot.power_on()
+        cmd = {"type": "tick", "args": ""}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "Tick executed")
+        self.assertEqual(self.robot.state, RobotState.IDLE)
+
 
 if __name__ == "__main__":
     unittest.main()
+
+# Newline at end of file

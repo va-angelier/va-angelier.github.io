@@ -1,31 +1,19 @@
-# OOP_PCOM7E — Humanoid Robot (baseline)
+# OOP_PCOM7E Assignment
 
-UML (class, activity, sequence, state) + Python-implementatie met A* path planning,
-CLI, en low battery charging (terug naar **IDLE** bij ≥95%).
+This repository contains the system design for a humanoid robot software system, implemented in Python with automated tests and UML diagrams.
 
-## Quick start
+## Setup & Dependencies
+
+### 1) Virtual environment (recommended)
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
+
+
+## Install
 ```bash
 pip install -r requirements.txt
-python -m unittest -v
-python robot_system.py
-
-## CLI voorbeelden:
-
-power on
-navigate 5,5
-pick bottle
-speak hello
-tick        # laat opladen vorderen in CHARGING
-exit
-
-## How to run
-
-```bash
-python -m unittest -v
-python OOP_PCOM7E_Assignment/robot_system.py
-
-# Robot diagrams
-plantuml -tpng OOP_PCOM7E_Assignment/uml/*.puml
-
-# Washing machine (e-portfolio)
-plantuml -tpng ePortfolio_Unit4/uml/washing_machine_state.puml
+```
