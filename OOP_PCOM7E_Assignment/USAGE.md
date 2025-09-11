@@ -1,5 +1,9 @@
 # Robot CLI – Usage
 
+```bash
+python robot_system.py
+```
+
 ## Quick start
 python -m robot.cli init
 python -m robot.cli power on
@@ -20,3 +24,8 @@ python -m robot.cli navigate --to "Dock"
 
 ## Exit codes
 0=OK, 2=InvalidCommand, 3=StateViolation, 4=IOError
+
+## Run tests
+```bash
+python -m unittest -v
+```

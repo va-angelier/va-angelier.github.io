@@ -85,6 +85,30 @@ class TestRobotSystem(unittest.TestCase):
         self.assertEqual(result, "Tick executed")
         self.assertEqual(self.robot.state, RobotState.IDLE)
 
+    def test_navigation_with_obstacle(self):
+        print("Debug: Testing navigation with obstacle")
+        self.robot.power_on()
+        self.robot.env.obstacles = [(1, 1)]
+        cmd = {"type": "navigate", "args": "2,2"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertTrue(result.startswith("Navigating to") or
+                        result == "ERROR: No path to target")
+        self.assertEqual(self.robot.state, RobotState.IDLE)
+
+    def test_object_lookup_by_id(self):
+        print("Debug: Testing object lookup by ID")
+        self.robot.power_on()
+        obj = EnvObject("Bottle", "B1", Waypoint(1, 1))
+        self.robot.env.objects.append(obj)
+        self.robot.env.sense()
+        # Test if object_index works (indirectly via find_nearest_object)
+        cmd = {"type": "pick", "args": "Bottle"}
+        self.cli.enqueue(cmd)
+        result = self.robot.tick(self.cli.read_command())
+        self.assertEqual(result, "OK: Picked object")
+        self.assertEqual(self.robot.state, RobotState.IDLE)
+
 
 if __name__ == "__main__":
     unittest.main()

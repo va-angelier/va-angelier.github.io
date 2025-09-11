@@ -1,0 +1,30 @@
+@startuml
+skinparam shadowing false
+
+partition "Robot" {
+  :Detect error (e.g., low battery, no path);
+  if (error type) then (low battery)
+    :Notify: "Low battery – please charge";
+    :state = IDLE;
+    stop
+  else if (no path or timeout)
+    :Notify: "No path to target";
+    :state = ERROR;
+    :Attempt recovery;
+    if (recovery successful) then (yes)
+      :state = IDLE;
+      stop
+    else (no)
+      :Notify: "Recovery failed";
+      :state = OFF;
+      stop
+    endif
+  else if (grasp failed)
+    :Notify: "Grasp failed";
+    :state = ERROR;
+    :Undo last action;
+    :state = IDLE;
+    stop
+  endif
+}
+@enduml

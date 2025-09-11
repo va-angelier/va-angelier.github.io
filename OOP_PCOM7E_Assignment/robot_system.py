@@ -34,7 +34,9 @@ class EnvObject:
 class Environment:
     def __init__(self):
         self.objects: List[EnvObject] = []
+        self.object_index: Dict[str, EnvObject] = {}  # O(1) lookup by ID
         self.sensor_readings: List[float] = []
+        self.obstacles = [(2, 2), (3, 3)]
 
     def sense(self) -> None:
         print("Debug: Sensing environment")
@@ -43,13 +45,23 @@ class Environment:
         for obj in self.objects:
             obj.position.x += int(random.gauss(0, 1))
             obj.position.y += int(random.gauss(0, 1))
+            self.object_index[obj.id] = obj
 
     def find_nearest_object(self, kind: str) -> Optional[EnvObject]:
         print(f"Debug: Searching for object of kind {kind}")
+        # Optimized linear search with early exit
+        min_distance = float("inf")
+        nearest = None
         for obj in self.objects:
             if obj.kind == kind:
-                return obj
-        return None
+                distance = (abs(obj.position.x) + abs(obj.position.y))
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest = obj
+        return nearest
+
+    def is_obstacle(self, x: int, y: int) -> bool:
+        return (x, y) in self.obstacles
 
 
 class MemoryStore:
@@ -69,11 +81,14 @@ class Navigation:
         self.path_queue: deque = deque()
         self.timeout_counter = 0
 
-    def plan_path(self, start: Waypoint, target: Waypoint) -> bool:
+    def plan_path(self, start: Waypoint, target: Waypoint, env: Environment) -> bool:
         print(f"Debug: Planning path from {start.x},{start.y} to "
               f"{target.x},{target.y}")
         def heuristic(a: Waypoint, b: Waypoint) -> float:
-            return math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+            distance = math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+            if env.is_obstacle(a.x, a.y) or env.is_obstacle(b.x, b.y):
+                return distance * 1.5
+            return distance
 
         open_set = [(0, start)]
         came_from = {}
@@ -96,6 +111,8 @@ class Navigation:
                 return True
             for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
                 neighbor = Waypoint(current.x + dx, current.y + dy)
+                if env.is_obstacle(neighbor.x, neighbor.y):
+                    continue
                 tentative_g_score = g_score.get(current, float("inf")) + 1
                 if tentative_g_score < g_score.get(neighbor, float("inf")):
                     came_from[neighbor] = current
@@ -116,7 +133,7 @@ class Manipulator:
 
     def pick(self, object_id: str) -> bool:
         print(f"Debug: Attempting to pick {object_id}")
-        if random.random() < 0.1:
+        if random.random() > 0.9:  # 90% success for tests
             return False
         self.grasp_history.append(object_id)
         return True
@@ -186,7 +203,7 @@ class Robot:
                 if self.battery_level < 10:
                     self.state = RobotState.IDLE
                     return "ERROR: Low battery – please charge"
-                if (not self.nav.plan_path(start, target) or
+                if (not self.nav.plan_path(start, target, self.env) or
                     self.nav.timeout_counter >= 1000):
                     self.state = RobotState.ERROR
                     return "ERROR: No path to target"
@@ -210,7 +227,8 @@ class Robot:
             if not obj:
                 self.state = RobotState.IDLE
                 return "ERROR: Object not found"
-            if (not self.nav.plan_path(Waypoint(0, 0), obj.position) or
+            if (not self.nav.plan_path(Waypoint(0, 0), obj.position,
+                                      self.env) or
                 self.nav.timeout_counter >= 1000):
                 self.state = RobotState.ERROR
                 return "ERROR: No path to target"

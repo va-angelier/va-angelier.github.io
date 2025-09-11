@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+actor User
+actor "Operator/Admin" as Admin
+rectangle "Robot System" {
+  usecase "Power On/Off" as UC_Power
+  usecase "Navigate to (x,y)" as UC_Nav
+  usecase "Pick Object" as UC_Pick
+  usecase "Place Object" as UC_Place
+  usecase "Report Status" as UC_Status
+  usecase "Handle Error" as UC_Error
+  usecase "Charge Battery" as UC_Charge
+}
+
+User --> UC_Nav
+User --> UC_Pick
+User --> UC_Place
+User --> UC_Status
+Admin --> UC_Power
+Admin --> UC_Error
+UC_Error .> UC_Status : <<includes>>
+UC_Pick .> UC_Nav : <<extends>> when object not at hand
+UC_Charge <. UC_Error : <<mitigation>>
+@enduml

@@ -1,0 +1,25 @@
+@startuml
+title Packages – Code Organisation
+package "domain" {
+  class Robot
+  class Navigation
+  class Manipulator
+  class Environment
+}
+package "application" {
+  class RobotController
+  class CommandHandler
+}
+package "infrastructure" {
+  class SensorAdapter
+  class MotorDriver
+  class MemoryStoreAdapter
+}
+package "interface" {
+  class CLI
+  class ApiGateway
+}
+"interface" ..> "application"
+"application" ..> "domain"
+"infrastructure" ..> "domain"
+@enduml

@@ -1,0 +1,62 @@
+@startuml
+skinparam componentStyle rectangle
+title Components – Robot System
+
+actor "User" as User
+
+package "Robot System" {
+  component "CLI" as CLI
+  component "Command Parser" as Parser
+  component "Robot Core" as Core
+
+  component "Navigation" as Nav
+  component "Manipulator" as Manip
+  component "Communicator" as Comms
+  component "Memory Store" as Mem
+  component "Power/BatteryMgr" as Pwr
+
+  component "Map/Costmap" as Map
+  component "Localization" as Loc
+  component "Planner" as Plan
+  component "Controller" as Ctrl
+
+  component "Grasp Planner" as GPlan
+  component "Arm Controller MCU" as MCU
+
+  component "Speech I/O" as Speech
+  component "Display I/F" as Display
+
+  component "Sensors" as Sensors
+
+  ' --- Connecties ---
+  User --> CLI
+  CLI --> Parser
+  Parser --> Core
+
+  Core --> Nav
+  Core --> Manip
+  Core --> Comms
+  Core --> Mem
+  Core --> Pwr
+
+  Nav --> Map
+  Nav --> Loc
+  Nav --> Plan
+  Plan --> Ctrl
+
+  Manip --> GPlan
+  Manip --> MCU
+
+  Comms --> Speech
+  Comms --> Display
+
+  Sensors -down-> Loc
+  Sensors -down-> Map
+}
+
+note right of Sensors
+  LiDAR
+  IMU
+  Camera
+end note
+@enduml

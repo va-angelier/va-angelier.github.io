@@ -1,0 +1,44 @@
+@startuml
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+}
+skinparam shadowing false
+
+start
+
+:User enters "navigate <x,y>" in CLI;
+
+partition "CLI" {
+  :Enqueue command;
+}
+
+partition "Robot" {
+  if (state == OFF) then (yes)
+    :Reply "Power on first";
+    stop
+  else (no)
+  endif
+
+  if (battery < 10%) then (yes)
+    :Reply "Low battery – please charge";
+    stop
+  else (no)
+  endif
+
+  :Navigation.planPath(start, target);
+
+  repeat
+    :Navigation.nextStep();
+  repeat while (not at target)
+
+  if (no path or timeout) then (yes)
+    :Set state to ERROR;
+    :Notify "No path to target";
+    stop
+  else (no)
+    :Set state to IDLE;
+  endif
+}
+
+@enduml

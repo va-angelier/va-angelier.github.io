@@ -1,0 +1,23 @@
+@startuml
+node "User Device" as UD {
+  artifact "CLI" as artCLI
+}
+node "Robot PC (x86/Linux)" as RPC {
+  artifact "Robot Core\nNav/Loc/Planner" as artCore
+  artifact "Communicator" as artComms
+}
+node "Arm MCU (RTOS)" as MCU {
+  artifact "Arm Controller"
+}
+node "Sensor Suite" as SNS {
+  artifact "LiDAR/IMU/Camera"
+}
+cloud "Optional Cloud/Log Server" as Cloud {
+  artifact "Telemetry/Updates"
+}
+
+UD --> RPC : LAN/Wi-Fi
+SNS --> RPC : EtherCAT/USB/CSI
+RPC --> MCU : CAN/UART
+RPC --> Cloud : HTTPS/MQTT (optional)
+@enduml

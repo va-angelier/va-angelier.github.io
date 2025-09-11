@@ -1,5 +1,4 @@
 @startuml
-title Pick command — OFF / Low battery / Object not found / No path / Grasp fail
 actor User
 participant CLI
 participant Robot
@@ -7,41 +6,35 @@ participant Environment
 participant Navigation
 participant Manipulator
 participant MemoryStore
-
 User -> CLI : type "pick bottle"
 CLI -> CLI : enqueue(Command)
 CLI -> Robot : deliver(Command)
-
-alt Robot OFF
-  Robot --> CLI : "Power on first"
-else Robot ON
-  alt battery < 10%
-    Robot --> CLI : "LOW BATTERY: entering charging"
-  else battery OK
-    Robot -> Environment : sense()
-    Environment --> Robot : sensor snapshot
-    alt Object found
-      Robot -> Navigation : planPath(targetPos)
-      loop until at target
-        Robot -> Navigation : nextStep()
-        Navigation --> Robot : Waypoint
-      end
-      alt No path / timeout
-        Robot --> CLI : "No path to target"
-      else Path OK
-        Robot -> Manipulator : pick(objectId)
-        alt Grasp success
-          Manipulator --> Robot : ok
-          Robot -> MemoryStore : pushAction(PICK)
-          MemoryStore --> Robot : ack
-          Robot --> CLI : "OK: picked"
-        else Grasp fail
-          Manipulator --> Robot : fail
-          Robot --> CLI : "ERROR: grasp failed"
-        end
-      end
-    else Object not found
-      Robot --> CLI : "Object not found"
+Robot -> Environment : sense()
+Environment --> Robot : sensor snapshot
+alt battery < 10%
+  Robot --> CLI : "Low battery – please charge"
+else
+  Robot -> Navigation : planPath(target)
+  Navigation --> Robot : path planned
+  loop while (not atTarget and timeout < 1000)
+    Robot -> Navigation : nextStep()
+    Navigation --> Robot : Waypoint or null
+  end
+  alt no path or timeout
+    Robot -> CLI : "No path to target"
+    Robot -> Robot : setStateToError()
+  else
+    Robot -> Manipulator : pick(objectId)
+    Manipulator --> Robot : success/fail
+    alt success
+      Robot -> MemoryStore : pushAction(PICK)
+      Robot -> CLI : "OK: picked"
+      Robot -> Robot : setStateToIdle()
+    else
+      Robot -> CLI : "Grasp failed"
+      Robot -> Robot : setStateToError()
+      Robot -> MemoryStore : undoLastAction
+      Robot -> Robot : setStateToIdle()
     end
   end
 end

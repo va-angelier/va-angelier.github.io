@@ -1,18 +1,17 @@
 @startuml
-skinparam packageStyle rectangle
-skinparam classAttributeIconSize 0
-
 package "Robot System" {
-
-  class Waypoint {
-    + x: Integer
-    + y: Integer
-  }
-
-  class EnvObject {
-    + id: String
-    + kind: String
-    + position: Waypoint
+  class Robot {
+    - id: String
+    - state: RobotState
+    - batteryLevel: Integer
+    - env: Environment
+    - memory: MemoryStore
+    - nav: Navigation
+    - manip: Manipulator
+    - comms: Communicator
+    + powerOn(): Boolean
+    + powerOff(): Boolean
+    + tick(command: Command): String
   }
 
   enum RobotState {
@@ -21,35 +20,12 @@ package "Robot System" {
     MOVING
     MANIPULATING
     COMMUNICATING
-    CHARGING
     ERROR
-  }
-
-  enum CmdType {
-    NAVIGATE
-    PICK
-    SPEAK
-    TICK
-  }
-
-  class Command {
-    + type: CmdType
-    + args: Map<String,String>
-  }
-
-  class Robot {
-    - id: String
-    - position: Waypoint
-    - state: RobotState
-    - batteryLevel: Integer
-    + powerOn(): Boolean
-    + powerOff(): Boolean
-    + tick(cmd: Command): String
   }
 
   class Navigation {
     - pathQueue: Queue<Waypoint>
-    + planPath(start: Waypoint, target: Waypoint)
+    + planPath(start: Waypoint, target: Waypoint, env: Environment): Boolean
     + nextStep(): Waypoint
   }
 
@@ -66,16 +42,12 @@ package "Robot System" {
 
   class Environment {
     - objects: List<EnvObject>
+    - objectIndex: Dict<String, EnvObject>
     - sensorReadings: List<Float>
+    - obstacles: List<(Integer, Integer)>
     + sense(): void
     + findNearestObject(kind: String): EnvObject
-  }
-
-  class MemoryStore {
-    - facts: List<String>
-    - breadcrumbs: Stack<String>
-    + pushAction(a: String): void
-    + lastAction(): String
+    + isObstacle(x: Integer, y: Integer): Boolean
   }
 
   class CLI {
@@ -84,13 +56,39 @@ package "Robot System" {
     + readCommand(): Command
   }
 
-  Robot "1" *-- "1" Navigation
-  Robot "1" *-- "1" Manipulator
-  Robot "1" *-- "1" Communicator
-  Robot "1" *-- "1" Environment
-  Robot "1" *-- "1" MemoryStore
+  class MemoryStore {
+    - facts: List<String>
+    - breadcrumbs: Stack<String>
+    + pushAction(action: String): void
+    + lastAction(): String
+  }
 
-  Environment "1" *-- "*" EnvObject : contains
-  CLI --> Robot : sends Command
+  class Command {
+    + type: String
+    + args: Map<String,String>
+  }
+
+  class Waypoint {
+    + x: Integer
+    + y: Integer
+  }
+
+  class EnvObject {
+    + kind: String
+    + id: String
+    + position: Waypoint
+  }
+
+  Robot *-- Navigation
+  Robot *-- Manipulator
+  Robot *-- Communicator
+  Robot *-- Environment
+  Robot *-- MemoryStore
+  Robot --> RobotState
+
+  Environment "1" o-- "*" EnvObject
+  CLI ..> Command
+  Robot ..> Command
+  CLI --> Robot : "sends Command"
 }
 @enduml
