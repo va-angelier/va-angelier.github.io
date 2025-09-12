@@ -29,3 +29,5 @@ python -m robot.cli navigate --to "Dock"
 ```bash
 python -m unittest -v
 ```
+
+© Victor Angelier – OOP_PCOM7E Assignment

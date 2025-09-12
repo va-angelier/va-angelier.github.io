@@ -15,3 +15,5 @@ Sommerville, I. (2015) *Software Engineering*, 10th edn. Pearson.
 See the diagram below (rendered from `uml/washingmachine_state_diagram.puml`).
 
 ![Washing machine state machine](uml/washingmachine_state_diagram.png)
+
+© Victor Angelier – OOP_PCOM7E Assignment

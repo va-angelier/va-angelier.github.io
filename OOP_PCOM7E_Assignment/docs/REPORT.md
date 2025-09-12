@@ -164,3 +164,5 @@ flake8
 - Siciliano, B. and Khatib, O. (2016) *Springer Handbook of Robotics*. 2nd edn. Springer.  
 - Sommerville, I. (2015) *Software Engineering*. 10th edn. Pearson.  
 - Thrun, S., Burgard, W. and Fox, D. (2005) *Probabilistic Robotics*. MIT Press.
+
+© Victor Angelier – OOP_PCOM7E Assignment
