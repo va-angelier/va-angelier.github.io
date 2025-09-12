@@ -1,9 +1,19 @@
+# robot/robot_system.py
 import random
 from collections import deque
 from typing import List, Optional, Dict
 from enum import Enum
 import heapq
 import math
+LOW_BATTERY = 10
+CHARGE_RATE_PER_TICK = 20
+
+
+# UML-compatible command type (optional convenience)
+class Command:
+    def __init__(self, type: str, args: str):
+        self.type = type
+        self.args = args
 
 
 class RobotState(Enum):
@@ -13,15 +23,30 @@ class RobotState(Enum):
     MANIPULATING = "MANIPULATING"
     COMMUNICATING = "COMMUNICATING"
     ERROR = "ERROR"
+    CHARGING = "CHARGING"
 
 
 class Waypoint:
+    __slots__ = ("x", "y")  # optional; saves memory
+
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
 
+    # for heapq ordering only
     def __lt__(self, other):
+        if not isinstance(other, Waypoint):
+            return NotImplemented
         return (self.x, self.y) < (other.x, other.y)
+
+    def __eq__(self, other):
+        return isinstance(other, Waypoint) and (self.x, self.y) == (other.x, other.y)
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __repr__(self):
+        return f"Waypoint(x={self.x}, y={self.y})"
 
 
 class EnvObject:
@@ -33,6 +58,8 @@ class EnvObject:
 
 class Environment:
     def __init__(self):
+        self.charging_dock = Waypoint(0, -1)
+
         self.objects: List[EnvObject] = []
         self.object_index: Dict[str, EnvObject] = {}  # O(1) lookup by ID
         self.sensor_readings: List[float] = []
@@ -43,17 +70,27 @@ class Environment:
         noise = random.gauss(mu=0, sigma=0.1)
         self.sensor_readings.append(0.5 + noise)
         for obj in self.objects:
-            obj.position.x += int(random.gauss(0, 1))
-            obj.position.y += int(random.gauss(0, 1))
+            dx = int(random.gauss(0, 1))
+            dy = int(random.gauss(0, 1))
+            nx, ny = obj.position.x + dx, obj.position.y + dy
+            # verplaats alleen als het GEEN obstakel is
+            if not self.is_obstacle(nx, ny):
+                obj.position.x, obj.position.y = nx, ny
             self.object_index[obj.id] = obj
+
+    # --- UML compatibility aliases ---
+    def findNearestObject(self, kind: str):
+        return self.find_nearest_object(kind)
+
+    def isObstacle(self, x: int, y: int) -> bool:
+        return self.is_obstacle(x, y)
 
     def find_nearest_object(self, kind: str) -> Optional[EnvObject]:
         print(f"Debug: Searching for object of kind {kind}")
-        # Optimized linear search with early exit
         min_distance = float("inf")
         nearest = None
         for obj in self.objects:
-            if obj.kind == kind:
+            if obj.kind.lower() == kind.lower():
                 distance = (abs(obj.position.x) + abs(obj.position.y))
                 if distance < min_distance:
                     min_distance = distance
@@ -69,9 +106,15 @@ class MemoryStore:
         self.facts: List[str] = []
         self.breadcrumbs: List[str] = []
 
+    def pushAction(self, action: str) -> None:
+        return self.push_action(action)
+
     def push_action(self, action: str) -> None:
         self.breadcrumbs.append(action)
 
+    def lastAction(self):
+        return self.last_action()
+    
     def last_action(self) -> Optional[str]:
         return self.breadcrumbs.pop() if self.breadcrumbs else None
 
@@ -81,45 +124,60 @@ class Navigation:
         self.path_queue: deque = deque()
         self.timeout_counter = 0
 
+    # --- UML compatibility aliases ---
+    def planPath(self, start: Waypoint, target: Waypoint, env: "Environment") -> bool:
+        return self.plan_path(start, target, env)
+
+    def nextStep(self):
+        return self.next_step()
+
+    @property
+    def pathQueue(self):
+        return self.path_queue
+
     def plan_path(self, start: Waypoint, target: Waypoint, env: Environment) -> bool:
-        print(f"Debug: Planning path from {start.x},{start.y} to "
-              f"{target.x},{target.y}")
+        print(f"Debug: Planning path from {start.x},{start.y} to {target.x},{target.y}")
+
         def heuristic(a: Waypoint, b: Waypoint) -> float:
-            distance = math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+            distance = math.hypot(b.x - a.x, b.y - a.y)
             if env.is_obstacle(a.x, a.y) or env.is_obstacle(b.x, b.y):
                 return distance * 1.5
             return distance
 
         open_set = [(0, start)]
-        came_from = {}
-        g_score = {start: 0}
-        f_score = {start: heuristic(start, target)}
+        came_from: Dict[Waypoint, Waypoint] = {}
+        g_score: Dict[Waypoint, float] = {start: 0.0}
+        f_score: Dict[Waypoint, float] = {start: heuristic(start, target)}
         self.timeout_counter = 0
         max_iterations = 1000
 
         while open_set and self.timeout_counter < max_iterations:
             self.timeout_counter += 1
-            current_f, current = heapq.heappop(open_set)
-            if current.x == target.x and current.y == target.y:
+            _, current = heapq.heappop(open_set)
+            if (current.x, current.y) == (target.x, target.y):
                 print("Debug: Path found")
                 path = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
                 path.reverse()
-                self.path_queue = deque([(p.x, p.y) for p in path])
+                # at least include target if path empty
+                coords = [(p.x, p.y) for p in path] or [(target.x, target.y)]
+                self.path_queue = deque(coords)
                 return True
+
             for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
                 neighbor = Waypoint(current.x + dx, current.y + dy)
                 if env.is_obstacle(neighbor.x, neighbor.y):
                     continue
-                tentative_g_score = g_score.get(current, float("inf")) + 1
-                if tentative_g_score < g_score.get(neighbor, float("inf")):
+                tentative_g = g_score.get(current, float("inf")) + 1
+                if tentative_g < g_score.get(neighbor, float("inf")):
                     came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = (tentative_g_score +
-                                        heuristic(neighbor, target))
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    g_score[neighbor] = tentative_g
+                    f = tentative_g + heuristic(neighbor, target)
+                    f_score[neighbor] = f
+                    heapq.heappush(open_set, (f, neighbor))
+
         print("Debug: No path found, timeout reached")
         return False
 
@@ -133,10 +191,12 @@ class Manipulator:
 
     def pick(self, object_id: str) -> bool:
         print(f"Debug: Attempting to pick {object_id}")
-        if random.random() > 0.9:  # 90% success for tests
-            return False
+        # deterministisch: slaag altijd; 'grasp failed' tests gebruiken toch een stub
         self.grasp_history.append(object_id)
         return True
+
+    def undoLastGrasp(self) -> bool:
+        return self.undo_last_grasp()
 
     def undo_last_grasp(self) -> bool:
         return bool(self.grasp_history.pop()) if self.grasp_history else False
@@ -154,6 +214,10 @@ class CLI:
     def __init__(self):
         self.cmd_queue: deque = deque()
 
+    @property
+    def cmdQueue(self):
+        return self.cmd_queue
+    
     def enqueue(self, cmd: Dict[str, str]) -> None:
         self.cmd_queue.append(cmd)
 
@@ -163,6 +227,8 @@ class CLI:
 
 class Robot:
     def __init__(self, id: str):
+        self.charging = False
+        self.navigating_to_charger = False
         self.id = id
         self.state = RobotState.OFF
         self.battery_level = 100
@@ -171,6 +237,36 @@ class Robot:
         self.nav = Navigation()
         self.manip = Manipulator()
         self.comms = Communicator()
+
+    def _auto_charge_if_low(self) -> str | None:
+        if self.battery_level < LOW_BATTERY and not self.navigating_to_charger and self.state != RobotState.CHARGING:
+            return self._start_docking()
+        return None
+
+    def _start_docking(self) -> str:
+        dock = getattr(self.env, "charging_dock", Waypoint(0, -1))
+        self.nav.plan_path(Waypoint(0, 0), dock, self.env)
+        self.navigating_to_charger = True
+        self.charging = True
+        self.state = RobotState.MOVING
+        return "AUTO: Low battery – docking initiated"
+
+    def _charging_tick(self) -> str:
+        if self.state != RobotState.CHARGING:
+            return "Tick executed"
+        self.battery_level = min(100, self.battery_level + CHARGE_RATE_PER_TICK)
+        if self.battery_level >= 100:
+            self.charging = False
+            self.state = RobotState.IDLE
+            return "Charging complete (100%)"
+        return f"Charging... ({self.battery_level}%)"
+
+    # --- UML compatibility aliases ---
+    def powerOn(self) -> bool:     # UML name
+        return self.power_on()
+
+    def powerOff(self) -> bool:    # UML name
+        return self.power_off()
 
     def power_on(self) -> bool:
         print("Debug: Powering on")
@@ -186,11 +282,31 @@ class Robot:
             return True
         return False
 
-    def tick(self, command: Dict[str, str]) -> str:
+    def tick(self, command: Dict[str, str] | Command) -> str:
         print(f"Debug: Processing command {command}")
         if self.state == RobotState.OFF:
             return "ERROR: Robot is off"
+
+        if isinstance(command, Command):
+            command = {"type": command.type, "args": command.args}
+
         cmd_type = command.get("type")
+
+        # Auto-docking / charging achtergrondlogica via 'tick'
+        if cmd_type == "tick":
+            if self.navigating_to_charger:
+                step = self.nav.next_step()
+                if step is None:
+                    # Aangekomen bij de dock
+                    self.navigating_to_charger = False
+                    self.charging = True
+                    self.state = RobotState.CHARGING
+                    return "Docked: charging started"
+                return f"Auto-docking step {step}"
+            if self.state == RobotState.CHARGING:
+                return self._charging_tick()
+            return "Tick executed"
+
         if cmd_type == "navigate":
             if self.state != RobotState.IDLE:
                 self.state = RobotState.IDLE
@@ -204,22 +320,24 @@ class Robot:
                     self.state = RobotState.IDLE
                     return "ERROR: Low battery – please charge"
                 if (not self.nav.plan_path(start, target, self.env) or
-                    self.nav.timeout_counter >= 1000):
+                        self.nav.timeout_counter >= 1000):
                     self.state = RobotState.ERROR
                     return "ERROR: No path to target"
                 step = self.nav.next_step()
                 self.memory.push_action("NAVIGATE")
                 self.battery_level -= 5
-                self.state = RobotState.IDLE
-                return f"Navigating to {step}" if step else "ERROR: No path"
+                charge_msg = self._auto_charge_if_low()
+                self.state = self.state if charge_msg else RobotState.IDLE
+                base = f"Navigating to {step}" if step else "ERROR: No path"
+                return f"{base} | {charge_msg}" if charge_msg else base
             except ValueError:
                 self.state = RobotState.IDLE
                 return "ERROR: Invalid coordinates"
+
         elif cmd_type == "pick":
             if self.state != RobotState.IDLE:
                 self.state = RobotState.IDLE
                 return "ERROR: Cannot pick, robot is busy"
-            self.state = RobotState.MANIPULATING
             if self.battery_level < 10:
                 self.state = RobotState.IDLE
                 return "ERROR: Low battery – please charge"
@@ -227,18 +345,22 @@ class Robot:
             if not obj:
                 self.state = RobotState.IDLE
                 return "ERROR: Object not found"
-            if (not self.nav.plan_path(Waypoint(0, 0), obj.position,
-                                      self.env) or
-                self.nav.timeout_counter >= 1000):
+            if (not self.nav.plan_path(Waypoint(0, 0), obj.position, self.env) or
+                    self.nav.timeout_counter >= 1000):
                 self.state = RobotState.ERROR
                 return "ERROR: No path to target"
+            self.state = RobotState.MANIPULATING
             if not self.manip.pick(command["args"]):
                 self.state = RobotState.ERROR
                 return "ERROR: Grasp failed"
             self.memory.push_action("PICK")
             self.state = RobotState.IDLE
             self.battery_level -= 5
-            return "OK: Picked object"
+            charge_msg = self._auto_charge_if_low()
+            self.state = self.state if charge_msg else RobotState.IDLE
+            return "OK: Picked object" if not charge_msg else "OK: Picked object | " + charge_msg
+
+
         elif cmd_type == "speak":
             if self.state != RobotState.IDLE:
                 self.state = RobotState.IDLE
@@ -248,39 +370,13 @@ class Robot:
             self.memory.push_action("SPEAK")
             self.state = RobotState.IDLE
             self.battery_level -= 2
-            return "OK: Spoken"
+            charge_msg = self._auto_charge_if_low()
+            self.state = self.state if charge_msg else RobotState.IDLE
+            return "OK: Spoken" if not charge_msg else "OK: Spoken | " + charge_msg
+
+
         elif cmd_type == "tick":
             return "Tick executed"
+
         self.state = RobotState.IDLE
         return "ERROR: Invalid command"
-
-
-# Interactive CLI loop
-def main():
-    robot = Robot("R1")
-    cli = CLI()
-    print("Humanoid Robot CLI: Type commands (e.g., 'navigate 5,5', "
-          "'pick bottle', 'speak hello', 'power on/off', 'tick', "
-          "'exit')")
-    while True:
-        cmd_input = input("> ")
-        if cmd_input == "exit":
-            break
-        if cmd_input == "power on":
-            print("Power on:", robot.power_on())
-            continue
-        if cmd_input == "power off":
-            print("Power off:", robot.power_off())
-            continue
-        parts = cmd_input.split(" ", 1)
-        cmd = {"type": parts[0], "args": parts[1] if len(parts) > 1
-               else ""}
-        cli.enqueue(cmd)
-        if cmd := cli.read_command():
-            print(robot.tick(cmd))
-
-
-if __name__ == "__main__":
-    main()
-
-# Newline at end of file

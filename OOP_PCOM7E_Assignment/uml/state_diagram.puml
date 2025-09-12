@@ -13,4 +13,7 @@ COMMUNICATING --> IDLE : done()
 COMMUNICATING --> ERROR : deviceFail
 ERROR --> IDLE : recover() if battery >= 10%
 ERROR --> OFF : criticalFailure()
+IDLE --> CHARGING : dock()/startCharge
+MOVING --> CHARGING : arrivedAtCharger()
+CHARGING --> IDLE : charged()
 @enduml

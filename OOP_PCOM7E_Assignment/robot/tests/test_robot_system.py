@@ -1,6 +1,9 @@
 import unittest
-from robot_system import Robot, CLI, RobotState, Waypoint, EnvObject
-
+from robot.robot_system import Robot, CLI, RobotState, Waypoint, EnvObject
+# and in the other test:
+from robot.robot_system import (
+    Robot, RobotState, Navigation, Manipulator, Environment, EnvObject, Waypoint
+)
 
 class TestRobotSystem(unittest.TestCase):
     def setUp(self):
