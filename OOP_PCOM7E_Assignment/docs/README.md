@@ -1,103 +1,96 @@
 # OOP_PCOM7E – Humanoid Robot System (Python)
 
-This repository contains the **system design** and a **reference implementation** for a humanoid robot software system, including automated tests and UML diagrams (PlantUML).
-
-## Project structure
-```
-.
-├─ robot/
-│  ├─ __init__.py
-│  ├─ __main__.py          # entrypoint → run with: python -m robot
-│  ├─ robot_system.py      # core implementation
-│  └─ tests/               # unit tests (pytest)
-├─ uml/                    # .puml sources (if included)
-└─ assets/img/             # exported UML images (png)
-```
+This repository contains the system design and reference implementation for a humanoid robot software system, including automated tests and UML diagrams (PlantUML). All documentation lives under docs/.
 
 ## Setup
-```bash
 python -m venv .venv
-# Windows
+### Windows
 .venv\Scripts\activate
-# macOS/Linux
+### macOS/Linux
 source .venv/bin/activate
 
 pip install -r requirements.txt
 pip install flake8 pytest pytest-cov
-```
 
 ## How to run (CLI)
-Start the interactive CLI from the **repo root**:
-```bash
-python -m robot
-```
+python -m robot  # start interactive CLI
+# Examples
+# > power on
+# > navigate 3,5
+# > pick bottle
+# > speak hello
+# > tick
 
-## Examples (interactive session):
-```
-Humanoid Robot CLI: Type commands (e.g., 'navigate 5,5', 'pick bottle', 'speak hello', 'power on/off', 'tick', 'exit')
-> power on
-Power on: True
-> navigate 3,5
-Navigating to (0, 1)
-> pick bottle
-ERROR: Object not found
-> speak hello
-OK: Spoken
-> exit
-```
-
-> Tip: For a quick demo of `pick`, add a sample object at startup (optional):
-> ```python
-> # in main(), right after robot = Robot("R1")
-> robot.env.objects.append(EnvObject("bottle", "b1", Waypoint(1, 1)))
-> robot.env.object_index["b1"] = robot.env.objects[-1]
-> ```
-
-## Testing & Quality
-Run the test suite and coverage:
-```bash
-pytest -q --cov=robot --cov-report=term-missing
+## Quality & Debug
 flake8
-```
-
-## REPORT – Result summary
-```markdown
-**Result summary** — 32 tests passed, 0 failed; Coverage **91%**.  
-Branches exercised: low-battery auto-dock → **CHARGING** → charge-to-100%, busy guards, no-path/timeout, invalid coords, object-not-found.
-
+pytest -q --cov=robot --cov-report=term-missing   # ~95%
+python -m robot
 
 ## Architecture overview
-- **Core**: `Robot` orchestrates **Navigation**, **Manipulator**, **Communicator**, **MemoryStore**, using **composition** for low coupling.
-- **Navigation**: grid-based A* with obstacles (`Environment.is_obstacle`), queue of waypoints for execution.
-- **Manipulator**: simple pick with grasp history (stack) for undo semantics in tests.
-- **Power**: explicit guards for low battery; **auto-docking** followed by a dedicated **CHARGING** state until 100%.
-- **CLI**: minimal, deterministic command interface (“navigate x,y”, “pick kind”, “speak text”).
-- **Data structures**: list/dict/stack/queue chosen for clarity and algorithmic complexity.
+
+**Components:** CLI, Robot Core, Navigation, Manipulator, Communicator, MemoryStore, Environment (sensing/obstacles), Power/Charging.
+
+**Responsibilities:** Orchestration in Robot Core; composition over inheritance; clear separation of concerns.
+
+**Polymorphism (Unit 5):** Navigation uses a PathPlanner Strategy (AStarPlanner default, GreedyPlanner optional), enabling DI in tests without changing Robot.
 
 ## UML artefacts
-PlantUML sources and exported images:
-- **Class diagram** – domain model (`assets/img/class_diagram.png`)
-- **Sequence diagram** – command flow (“navigate” & “pick”) (`assets/img/sequence_diagram.png`)
-- **Activity diagrams** – navigation / pick / errors (`assets/img/navigation_activity_diagram.png`, `assets/img/activity_diagram-pickup.png`, `assets/img/activity_diagram-errors.png`)
-- **State diagram** – lifecycle (`assets/img/state_diagram.png`)
-- **Component diagram** – logical architecture (`assets/img/component_diagram.png`)
-- **Deployment diagram** – runtime topology (`assets/img/deployment_diagram.png`)
-- **Use case diagram** – scope & actors (`assets/img/use_case_diagram.png`)
 
-> Naming in UML (CamelCase) maps directly to code (PEP8 snake_case), e.g. `powerOn()` ↔ `power_on()`.
+Images are referenced from docs/assets/img/ with captions:
 
-## Commands (cheatsheet)
-- `power on` / `power off`
-- `navigate x,y`
-- `pick <kind>`
-- `speak <text>`
-- `tick` *(progress docking/charging when applicable)*
-- `exit`
+docs/assets/img/class_diagram.png: Class diagram illustrating composition and attributes (Rumbaugh et al., 2005).
+
+docs/assets/img/sequence_diagram.png: Sequence diagram for “pick” command with error and auto-charging branches.
+
+docs/assets/img/activity_navigate.png: Activity diagram for navigation with power and battery guards.
+
+docs/assets/img/activity_pick.png: Activity diagram for object pickup with sensor and grasp logic.
+
+docs/assets/img/activity_errors.png: Activity diagram for error handling (low battery, no path).
+
+docs/assets/img/state_diagram.png: State transition diagram for robot lifecycle, including CHARGING.
+
+docs/assets/img/component_diagram.png: Component diagram showing logical architecture.
+
+docs/assets/img/deployment_diagram.png: Deployment diagram for runtime topology.
+
+docs/assets/img/use_case_diagram.png: Use case diagram defining system scope and actors.
+
+## Module Unit Mapping (evidence)
+| Unit | Thema (kort)                               | Wat laten we zien                                      | Waar (bestanden) |
+|-----:|--------------------------------------------|--------------------------------------------------------|------------------|
+| 1    | OOP & UML-basics                           | Class/Sequence/Activity/State-diagrams                 | `docs/assets/img/*.png`, `uml/*.puml` |
+| 2    | Requirements & Use-cases                   | Use-case diagram + CLI-flows                           | `docs/assets/img/use_case_diagram.png`, `robot/robot_system.py` |
+| 3    | Abstraction/Encapsulation                  | Cohesieve classes, compositie over overerving          | `robot/robot_system.py` |
+| 4    | Design principles (SRP, DIP, OCP)          | Injecteerbare planner (Strategy), losse concerns       | `robot/robot_system.py`, `robot/tests/test_polymorphism.py` |
+| 5    | Polymorphism                               | `PathPlanner` Strategy (`AStarPlanner`, `GreedyPlanner`)| `robot/tests/test_polymorphism.py` |
+| 6    | Algorithms & Search                        | A* (heuristic), obstakel-checks                        | `robot/robot_system.py` (Navigation) |
+| 7    | Debugging, Error handling & Data structures| Guards/ERROR/CHARGING, List/Dict/Stack/Queue, tests    | `robot/robot_system.py`, `robot/tests/*.py`, coverage ~95% |
+Dit is compact, leesbaar, en verwijst direct naar je artefacten.
+
+## Repo layout
+OOP_PCOM7E_Assignment/
+├─ docs/
+│  ├─ index.md
+│  ├─ README.md
+│  ├─ REPORT.md
+│  ├─ CHANGELOG.md
+│  └─ assets/img/*.png
+├─ robot/
+│  ├─ __init__.py
+│  ├─ __main__.py
+│  ├─ robot_system.py
+│  └─ tests/*.py
+└─ uml/*.puml
+
+## Testing
+pytest -q --cov=robot --cov-report=term-missing
+# Expect: all tests pass, coverage ~95% (robot package)
 
 ## Reproducibility
-- OS: macOS (tested), should be portable to Linux/Windows.
-- Python: 3.12+ recommended.
-- Dependencies: `pytest`, `pytest-cov`, `flake8`, PlantUML for diagram rendering.
 
----
-© Victor Angelier – OOP_PCOM7E Assignment
+OS: macOS; Python 3.12.x (Anaconda OK).
+
+Commands: see “Setup”, “Quality & Debug” above.
+
+Outputs (latest): all tests passed, coverage 95%.

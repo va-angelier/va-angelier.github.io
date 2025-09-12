@@ -1,0 +1,15 @@
+site_name: Humanoid Robot – System Design
+nav:
+  - Home: index.md
+  - Project README: README.md
+  - Report: REPORT.md
+  - Design Rationale: DESIGN_RATIONALE.md
+  - Changelog: CHANGELOG.md
+theme:
+  name: material
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - footnotes
+  - attr_list

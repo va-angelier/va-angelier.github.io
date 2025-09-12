@@ -12,7 +12,10 @@ CLI -> Robot : deliver(Command)
 Robot -> Environment : sense()
 Environment --> Robot : sensor snapshot
 alt battery < 10%
-  Robot --> CLI : "Low battery – please charge"
+  Robot -> Navigation : planPath(charger)
+  Navigation --> Robot : path planned
+  Robot -> Robot : setStateToCHARGING()
+  Robot -> CLI : "Navigating to charger"
 else
   Robot -> Navigation : planPath(target)
   Navigation --> Robot : path planned
