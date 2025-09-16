@@ -1,0 +1,53 @@
+@startuml
+title Humanoid Robot — Use Case Diagram (LoRa + RTLS + Edge AI)
+
+skinparam monochrome true
+left to right direction
+
+actor "Operator\n(User)" as Operator
+actor "Cloud Services" as Cloud
+actor "Maintenance\nTechnician" as Maint
+
+rectangle "Humanoid Robot System" as HRS {
+  usecase "UC1: Navigate to Waypoint" as UC1
+  usecase "UC2: Pick / Place Object" as UC2
+  usecase "UC3: Human Interaction\n(Speak/Listen)" as UC3
+  usecase "UC4: Localize & Map\n(SLAM + RTLS)" as UC4
+  usecase "UC5: Obstacle Avoidance" as UC5
+  usecase "UC6: Safety Stop / Safe State" as UC6
+  usecase "UC7: Stream Telemetry\n(via LoRa)" as UC7
+  usecase "UC8: Receive Updates\n(models/configs)" as UC8
+  usecase "UC9: Self-Diagnostics" as UC9
+}
+
+Operator --> UC1
+Operator --> UC2
+Operator --> UC3
+Operator --> UC6 : "Emergency stop"
+
+Maint --> UC9 : "Run tests"
+Maint --> UC6 : "Invoke safe state"
+
+Cloud --> UC8 : "Deliver updates"
+UC7 --> Cloud : "Status, logs, pose"
+
+UC1 .> UC4 : <<include>>
+UC1 .> UC5 : <<include>>
+UC2 .> UC5 : <<include>>
+UC2 .> UC4 : <<include>>
+UC3 .> UC4 : <<include>>  # Optional for proxemics
+
+UC6 .> UC5 : <<extend>>  # Triggered by safety breach
+UC9 .> UC7 : <<include>>  # Report diagnostics
+
+note right of UC8
+  Updates applied only if
+  signature verified and
+  checksum matches (A/B slots)
+end note
+
+note bottom of UC7
+  Low-power, long-range link
+  using LoRa/LoRaWAN
+end note
+@enduml

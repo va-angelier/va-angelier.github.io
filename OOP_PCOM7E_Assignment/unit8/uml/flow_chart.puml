@@ -1,0 +1,55 @@
+@startuml
+title Humanoid Robot — Control Flow (LoRaWAN + RTLS + Edge AI)
+
+skinparam monochrome true
+skinparam activity {
+  StartColor #222
+  EndColor #222
+  BackgroundColor #EEE
+  BorderColor #333
+}
+
+start
+:Boot & self-test;
+if (Sensors healthy?) then (yes)
+  :Acquire inputs\n- LiDAR\n- Vision\n- IMU\n- RTLS/GPS;
+else (no)
+  :Raise alert;
+  :Transmit fault telemetry via LoRaWAN;
+  stop
+endif
+
+:Preprocess (denoise, normalise);
+:Sensor fusion (EKF/UKF);
+:Localise & Map (SLAM + RTLS);
+:Perceive & Plan (Edge AI\npolicy/planner);
+
+if (User command present?) then (yes)
+  :Parse intent\n(navigate | pick | interact);
+else (no)
+  :Autonomous task selection\n(goal queue);
+endif
+
+if (Safety constraints satisfied?\n(collisions, torque, zones)) then (yes)
+  :Actuate\n- Locomotion\n- Manipulators\n- Speech;
+else (no)
+  :Enter SAFE state\n(stop motion, hold torque);
+  :Notify operator via LoRaWAN;
+endif
+
+:Log metrics locally;
+fork
+  :TX telemetry via LoRaWAN\n(status, pose, battery);
+fork again
+  :RX cloud updates\n(models, configs, tasks);
+end fork
+
+if (Update verified?\n(signature + checksum)) then (yes)
+  :Apply update (A/B slot);\nHot-reload if allowed;
+endif
+
+repeat
+  :Loop cycle 50–200 ms;
+repeat while (Operational)
+stop
+@enduml
