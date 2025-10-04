@@ -1,3 +1,6 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,missing-class-docstring
+# pylint: disable=multiple-statements,wrong-import-position,unused-import,duplicate-code
+
 from robot.robot_system import Robot, RobotState, EnvObject, Waypoint, Environment, Navigation
 
 def test_auto_charge_after_navigate_when_battery_drops():
@@ -23,7 +26,6 @@ def test_auto_charge_after_pick_when_battery_drops():
     assert "AUTO: Low battery" in out
     assert r.charging is True
     assert r.state == RobotState.MOVING
-from robot.robot_system import Robot, RobotState, EnvObject, Waypoint, Navigation
 
 def _drive_to_charger(r: Robot):
     # voer enkele ticks uit om naar de dock te stappen

@@ -1,4 +1,10 @@
-from robot.robot_system import Navigation, AStarPlanner, GreedyPlanner, Environment, Waypoint, Robot, RobotState
+# pylint: disable=missing-module-docstring,missing-function-docstring,missing-class-docstring
+# pylint: disable=multiple-statements,wrong-import-position,unused-import,duplicate-code
+
+from robot.robot_system import (
+    Navigation, AStarPlanner, GreedyPlanner, Environment, Waypoint,
+    Robot, RobotState
+)
 
 def test_astar_success_and_blocked():
     env = Environment()

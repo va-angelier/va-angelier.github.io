@@ -1,0 +1,11 @@
+************* Module robot.robot_system
+robot\robot_system.py:388:0: C0303: Trailing whitespace (trailing-whitespace)
+robot\robot_system.py:367:16: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+************* Module robot.tests.test_robot_system_additionally
+robot\tests\test_robot_system_additionally.py:110:4: C0415: Import outside toplevel (robot.robot_system.AStarPlanner) (import-outside-toplevel)
+************* Module robot.tests.test_robot_system_more
+robot\tests\test_robot_system_more.py:69:19: E1136: Value 'cmd' is unsubscriptable (unsubscriptable-object)
+
+------------------------------------------------------------------
+Your code has been rated at 9.91/10 (previous run: 9.90/10, +0.01)
+

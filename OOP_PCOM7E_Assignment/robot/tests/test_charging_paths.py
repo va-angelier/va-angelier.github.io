@@ -1,3 +1,6 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,missing-class-docstring
+# pylint: disable=multiple-statements,wrong-import-position,unused-import,duplicate-code
+
 from robot.robot_system import Robot, RobotState
 
 def test_docking_to_charging_and_complete():

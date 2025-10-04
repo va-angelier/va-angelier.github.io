@@ -1,3 +1,6 @@
+"""Core robot system types: entities, planners, navigation and robot controller."""
+from __future__ import annotations
+
 import math
 import heapq
 import random
@@ -21,6 +24,7 @@ logger.setLevel(logging.INFO)
 # Core domain types
 # -----------------------------------------------------------------------------
 class RobotState(Enum):
+    """Finite set of operational modes for the robot."""
     OFF = "OFF"
     IDLE = "IDLE"
     MOVING = "MOVING"
@@ -31,6 +35,7 @@ class RobotState(Enum):
 
 
 class Waypoint:
+    """Immutable waypoint used by planners and navigation."""
     __slots__ = ("x", "y")
 
     def __init__(self, x: int, y: int):
@@ -38,55 +43,62 @@ class Waypoint:
         self.y = y
 
     def __lt__(self, other):
+        """Order by (x, y) to support use in priority queues/sets."""
         if not isinstance(other, Waypoint):
             return NotImplemented
         return (self.x, self.y) < (other.x, other.y)
 
     def __eq__(self, other):
+        """Equality by coordinates."""
         return isinstance(other, Waypoint) and (self.x, self.y) == (other.x, other.y)
 
     def __hash__(self):
+        """Hash by coordinates to allow dict/set membership."""
         return hash((self.x, self.y))
 
     def __repr__(self):
         return f"Waypoint(x={self.x}, y={self.y})"
 
     def to_tuple(self) -> Tuple[int, int]:
+        """Return (x, y) as a tuple."""
         return (self.x, self.y)
 
 
 class EnvObject:
-    def __init__(self, kind: str, id: str, position: Waypoint):
+    """Environment object with an identifier and position."""
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, kind: str, id: str, position: Waypoint): # pylint: disable=redefined-builtin
         self.kind = kind
         self.id = id
         self.position = position
 
 
 class Environment:
+    """Holds world state, objects and obstacle grid, and exposes sensing APIs."""
+
     def __init__(self):
         self.objects: List[EnvObject] = []
         self.object_index: Dict[str, EnvObject] = {}  # O(1) lookup by ID
         self.sensor_readings: List[float] = []
-        # simpele obstakels; tests voegen eigen kaarten toe
         self.obstacles: List[Tuple[int, int]] = [(2, 2), (3, 3)]
 
     def sense(self) -> None:
+        """Append a noisy sensor reading and rebuild the object index."""
         print("Debug: Sensing environment")
-        # voeg ruis toe aan sensor_readings (reproduceerbaar genoeg)
         noise = random.gauss(mu=0, sigma=0.1)
         self.sensor_readings.append(0.5 + noise)
-        # update index, verplaats objecten NIET naar obstakels (determinisme)
         for obj in self.objects:
             self.object_index[obj.id] = obj
 
     def find_nearest_object(self, kind: str) -> Optional[EnvObject]:
+        """Return closest object of the given kind (Manhattan distance) or None."""
         print(f"Debug: Searching for object of kind {kind}")
         k = (kind or "").lower()
         nearest: Optional[EnvObject] = None
         min_dist = float("inf")
         for obj in self.objects:
             if (obj.kind or "").lower() == k:
-                # Manhattan afstand is voldoende
                 d = abs(obj.position.x) + abs(obj.position.y)
                 if d < min_dist:
                     min_dist = d
@@ -94,18 +106,24 @@ class Environment:
         return nearest
 
     def is_obstacle(self, x: int, y: int) -> bool:
+        """True if (x, y) is blocked."""
         return (x, y) in self.obstacles
 
 
 class MemoryStore:
+    """Very small store for actions and facts."""
+    # pylint: disable=too-few-public-methods
+
     def __init__(self):
         self.facts: List[str] = []
         self.breadcrumbs: List[str] = []
 
     def push_action(self, action: str) -> None:
+        """Push an action marker into the breadcrumb trail."""
         self.breadcrumbs.append(action)
 
     def last_action(self) -> Optional[str]:
+        """Pop the last action marker (or None)."""
         return self.breadcrumbs.pop() if self.breadcrumbs else None
 
 
@@ -113,16 +131,27 @@ class MemoryStore:
 # Polymorphic path-planning Strategy (Unit 5)
 # -----------------------------------------------------------------------------
 class PathPlanner(ABC):
+    """Abstract base for path-planning strategies."""
+    # pylint: disable=too-few-public-methods
     timeout_counter: int = 0
 
     @abstractmethod
-    def compute(self, start: "Waypoint", target: "Waypoint", env: "Environment") -> Optional[Deque[Tuple[int, int]]]:
+    def compute(
+        self, start: "Waypoint", target: "Waypoint", env: "Environment"
+    ) -> Optional[Deque[Tuple[int, int]]]:
+        # pylint: disable=too-many-locals
         """Return a deque of (x,y) steps or None if no path."""
         raise NotImplementedError
 
 
 class AStarPlanner(PathPlanner):
-    def compute(self, start: "Waypoint", target: "Waypoint", env: "Environment") -> Optional[Deque[Tuple[int, int]]]:
+    """A* path planner with obstacle-aware heuristic."""
+    # pylint: disable=too-few-public-methods
+    def compute(
+        self, start: "Waypoint", target: "Waypoint", env: "Environment"
+    ) -> Optional[Deque[Tuple[int, int]]]:
+        # pylint: disable=too-many-locals
+        """Return a deque of (x,y) steps or None if no path."""
         self.timeout_counter = 0
 
         def heuristic(a: Waypoint, b: Waypoint) -> float:
@@ -161,8 +190,11 @@ class AStarPlanner(PathPlanner):
 
 
 class GreedyPlanner(PathPlanner):
-    """Eenvoudige greedy planner; puur ter demonstratie van polymorfisme."""
-    def compute(self, start: "Waypoint", target: "Waypoint", env: "Environment") -> Optional[Deque[Tuple[int, int]]]:
+    """Simple greedy planner for demonstration (polymorphism)."""
+    # pylint: disable=too-few-public-methods
+    def compute(
+        self, start: "Waypoint", target: "Waypoint", env: "Environment"
+    ) -> Optional[Deque[Tuple[int, int]]]:
         x, y = start.x, start.y
         coords: Deque[Tuple[int, int]] = deque()
         self.timeout_counter = 0
@@ -171,13 +203,17 @@ class GreedyPlanner(PathPlanner):
             self.timeout_counter += 1
             moved = False
             if x < target.x and not env.is_obstacle(x + 1, y):
-                x += 1; moved = True
+                x += 1
+                moved = True
             elif x > target.x and not env.is_obstacle(x - 1, y):
-                x -= 1; moved = True
+                x -= 1
+                moved = True
             elif y < target.y and not env.is_obstacle(x, y + 1):
-                y += 1; moved = True
+                y += 1
+                moved = True
             elif y > target.y and not env.is_obstacle(x, y - 1):
-                y -= 1; moved = True
+                y -= 1
+                moved = True
             if not moved:
                 return None
             coords.append((x, y))
@@ -185,12 +221,14 @@ class GreedyPlanner(PathPlanner):
 
 
 class Navigation:
+    """Orchestrates planning via an injected PathPlanner."""
     def __init__(self, planner: Optional[PathPlanner] = None):
         self.path_queue: Deque[Tuple[int, int]] = deque()
         self.timeout_counter = 0
         self.planner: PathPlanner = planner or AStarPlanner()
 
     def plan_path(self, start: Waypoint, target: Waypoint, env: Environment) -> bool:
+        """Plan a path and store it in the internal queue."""
         print(f"Debug: Planning path from {start.x},{start.y} to {target.x},{target.y}")
         coords = self.planner.compute(start, target, env)
         self.timeout_counter = getattr(self.planner, "timeout_counter", 0)
@@ -201,39 +239,49 @@ class Navigation:
         return True
 
     def next_step(self) -> Optional[Tuple[int, int]]:
+        """Pop next (x,y) waypoint if available."""
         return self.path_queue.popleft() if self.path_queue else None
 
 
 class Manipulator:
+    """Demo manipulator API (pick/undo)."""
     def __init__(self):
         self.grasp_history: List[str] = []
 
     def pick(self, object_id: str) -> bool:
+        """Attempt to grasp the given object id."""
         print(f"Debug: Attempting to pick {object_id}")
         # deterministisch succes; tests forceren failure via stub
         self.grasp_history.append(object_id)
         return True
 
     def undo_last_grasp(self) -> bool:
+        """Undo the previous grasp if any."""
         return bool(self.grasp_history.pop()) if self.grasp_history else False
 
 
 class Communicator:
+    """Demo communications adapter (speak/display)."""
     def speak(self, text: str) -> None:
+        """Say the given text (debug output)."""
         print(f"Debug: Speaking {text}")
 
     def display(self, text: str) -> None:
+        """Display the given text (debug output)."""
         print(f"Debug: Displaying {text}")
 
 
 class CLI:
+    """Minimal command queue for interactive CLI."""
     def __init__(self):
         self.cmd_queue: Deque[Dict[str, str]] = deque()
 
     def enqueue(self, cmd: Dict[str, str]) -> None:
+        """Push a command onto the queue."""
         self.cmd_queue.append(cmd)
 
     def read_command(self) -> Optional[Dict[str, str]]:
+        """Pop a command from the queue, if any."""
         return self.cmd_queue.popleft() if self.cmd_queue else None
 
 
@@ -241,8 +289,11 @@ class CLI:
 # Robot orchestrator with guards, auto-dock + charging, and try/except (Unit 7)
 # -----------------------------------------------------------------------------
 class Robot:
-    def __init__(self, id: str):
-        self.id = id
+    """High-level façade aggregating subsystems and control logic."""
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, robot_id: str):
+        self.id = robot_id
         self.state = RobotState.OFF
         self.battery_level = 100
         self.env = Environment()
@@ -258,6 +309,7 @@ class Robot:
 
     # --- power management ---
     def power_on(self) -> bool:
+        """Transition OFF→IDLE on first power-on."""
         print("Debug: Powering on")
         if self.state == RobotState.OFF:
             self.state = RobotState.IDLE
@@ -265,6 +317,7 @@ class Robot:
         return False
 
     def power_off(self) -> bool:
+        """Transition to OFF and clear charging/docking flags."""
         print("Debug: Powering off")
         if self.state != RobotState.OFF:
             self.state = RobotState.OFF
@@ -275,6 +328,7 @@ class Robot:
 
     # --- helper: initiate docking if battery low ---
     def _maybe_start_autodock(self) -> Optional[str]:
+        """Start docking when battery is low; return status message or None."""
         if self.battery_level < 10:
             # plan route naar charger
             _ = self.nav.plan_path(Waypoint(0, 0), self.charger_pos, self.env)
@@ -286,6 +340,10 @@ class Robot:
 
     # --- tick: progress docking/charging, or process a command ---
     def tick(self, command: Dict[str, str]) -> str:
+        """Process one control-loop step for the current robot state.
+            TODO(Unit 11): Refactor to State/Command + guard clauses to reduce branches/returns.
+        """
+        # pylint: disable=too-many-return-statements,too-many-branches,too-many-statements
         print(f"Debug: Processing command {command}")
         if self.state == RobotState.OFF:
             return "ERROR: Robot is off"
@@ -327,6 +385,7 @@ class Robot:
                     self.state = RobotState.IDLE
                     self.charging = False
                     return "Charging complete (100%)"
+                
                 self.battery_level = min(100, self.battery_level + 10)
                 if self.battery_level >= 100:
                     self.state = RobotState.IDLE
@@ -372,8 +431,8 @@ class Robot:
             except ValueError:
                 self.state = RobotState.IDLE
                 return "ERROR: Invalid coordinates"
-            except Exception:
-                logger.exception("Unexpected error in navigate")
+            except Exception as exc: # pylint: disable=broad-exception-caught
+                logger.exception("Unexpected error in navigate %s", exc)
                 self.state = RobotState.ERROR
                 return "ERROR: Internal planning error"
 
@@ -415,8 +474,8 @@ class Robot:
                 msg = "OK: Picked object"
                 auto = self._maybe_start_autodock()
                 return f"{msg} | {auto}" if auto else msg
-            except Exception:
-                logger.exception("Unexpected error in pick")
+            except Exception as exc: # pylint: disable=broad-exception-caught
+                logger.exception("Unexpected error in pick: %s", exc)
                 self.state = RobotState.ERROR
                 return "ERROR: Manipulator error"
 
@@ -440,4 +499,3 @@ class Robot:
         # ---------------------------------------------------------------------
         self.state = RobotState.IDLE
         return "ERROR: Invalid command"
-

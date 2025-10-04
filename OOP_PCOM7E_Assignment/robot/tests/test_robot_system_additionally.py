@@ -1,3 +1,6 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,missing-class-docstring
+# pylint: disable=multiple-statements,wrong-import-position,unused-import,duplicate-code
+
 import unittest
 from collections import deque
 from robot.robot_system import (

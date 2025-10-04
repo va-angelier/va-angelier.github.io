@@ -1,8 +1,10 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,missing-class-docstring
+# pylint: disable=multiple-statements,wrong-import-position,unused-import,duplicate-code
+
 import unittest
-from robot.robot_system import Robot, CLI, RobotState, Waypoint, EnvObject
-# and in the other test:
 from robot.robot_system import (
-    Robot, RobotState, Navigation, Manipulator, Environment, EnvObject, Waypoint
+    Robot, RobotState, Navigation, Manipulator, Environment, EnvObject,
+    Waypoint, CLI
 )
 
 class TestRobotSystem(unittest.TestCase):

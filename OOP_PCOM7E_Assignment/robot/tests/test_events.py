@@ -1,7 +1,14 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,missing-class-docstring
+# pylint: disable=multiple-statements,wrong-import-position,unused-import,duplicate-code
+
 from robot.services.events import EventBus
 
 def test_eventbus_calls_handlers():
     bus, seen = EventBus(), []
-    bus.subscribe("t", lambda m: seen.append(m))
-    bus.publish("t", {"x":1})
-    assert seen == [{"x":1}]
+
+    def _append(msg):
+        seen.append(msg)
+
+    bus.subscribe("t", _append)
+    bus.publish("t", {"x": 1})
+    assert seen == [{"x": 1}]
