@@ -60,6 +60,8 @@ docs/assets/img/deployment_diagram.png: Deployment diagram for runtime topology.
 
 docs/assets/img/use_case_diagram.png: Use case diagram defining system scope and actors.
 
+docs/assets/img/state-pattern.png: State pattern for Robot delegating tick() to Off/Idle/Navigating/Charging states to reduce decision density and coupling.
+
 ## Module Unit Mapping (evidence)
 | Unit | Thema (kort)                               | Wat laten we zien                                      | Waar (bestanden) |
 |-----:|--------------------------------------------|--------------------------------------------------------|------------------|

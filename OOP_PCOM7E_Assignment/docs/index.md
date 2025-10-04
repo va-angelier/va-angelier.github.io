@@ -14,6 +14,7 @@ Welkom! Dit is de documentatie voor mijn OOP_PCOM7E-assignment.
 - State → ![State](assets/img/state_diagram.png)
 - Component → ![Component](assets/img/component_diagram.png)
 - Deployment → ![Deployment](assets/img/deployment_diagram.png)
+- State Pattern → ![State](assets/img/state-pattern.png)
 
 ## Run & Validate
 ```bash
