@@ -1,0 +1,24 @@
+@startuml
+interface PathPlanner {
+  + plan(start : Point, goal : Point) : PathList
+}
+
+class AStarPlanner {
+  + plan(start : Point, goal : Point) : PathList
+}
+
+class RRTPlanner {
+  + plan(start : Point, goal : Point) : PathList
+}
+
+class Navigator {
+  - planner : PathPlanner
+  + navigate(start : Point, goal : Point)
+  - driveTo(waypoint : Point)
+}
+
+PathPlanner <|.. AStarPlanner
+PathPlanner <|.. RRTPlanner
+Navigator --> PathPlanner : uses
+
+@enduml

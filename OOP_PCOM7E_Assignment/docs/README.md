@@ -21,6 +21,10 @@ python -m robot  # start interactive CLI
 # > speak hello
 # > tick
 
+### Code Quality
+- Radon reports: [../robot/docs/radon_cc.txt](docs/radon_cc.txt), [../robot/docs/radon_mi.txt](docs/radon_mi.txt)
+- Full report: [../robot/docs/Code_Quality_Report.md](docs/Code_Quality_Report.md)
+
 ## Quality & Debug
 flake8
 pytest -q --cov=robot --cov-report=term-missing   # ~95%
