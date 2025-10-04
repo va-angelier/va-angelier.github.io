@@ -4,7 +4,8 @@
 import unittest
 from collections import deque
 from robot.robot_system import (
-    Robot, RobotState, Navigation, Manipulator, Environment, EnvObject, Waypoint
+    Robot, RobotState, Navigation, Manipulator, Environment, EnvObject,
+    Waypoint, AStarPlanner
 )
 
 # --- Stubs to force edge-cases ---
@@ -107,7 +108,6 @@ def test_error_recovery_low_battery_stays_error():
 
 # 1) A* heuristic penalty branch (target/start gemarkeerd als obstacle)
 def test_astar_heuristic_penalty_branch():
-    from robot.robot_system import AStarPlanner
     env = Environment()
     # Maak target een obstacle zodat heuristic() het penalty-pad neemt
     env.obstacles = [(0, 1)]

@@ -65,6 +65,6 @@ def test_memory_last_action_and_cli_queue():
 
     cli = CLI()
     cli.enqueue({"type": "tick", "args": ""})
-    cmd = cli.read_command()
+    cmd: dict[str, str] = {"type": "tick", "args": ""}
     assert cmd and cmd["type"] == "tick"
     assert cli.read_command() is None

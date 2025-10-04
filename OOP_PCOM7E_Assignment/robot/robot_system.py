@@ -367,8 +367,6 @@ class Robot:
                 if self.battery_level >= 10:
                     self.state = RobotState.IDLE
                     return "OK: Recovered to IDLE"
-                else:
-                    return "ERROR: Cannot recover (low battery)"
 
             # Eerst docking-stappen afwerken
             if self.navigating_to_charger:
@@ -385,7 +383,6 @@ class Robot:
                     self.state = RobotState.IDLE
                     self.charging = False
                     return "Charging complete (100%)"
-                
                 self.battery_level = min(100, self.battery_level + 10)
                 if self.battery_level >= 100:
                     self.state = RobotState.IDLE
