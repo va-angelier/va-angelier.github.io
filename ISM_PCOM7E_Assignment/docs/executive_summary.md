@@ -10,7 +10,7 @@ The SolarWinds/SUNBURST incident was selected as a case study because it exempli
 2. Methodology
 The system was developed using object-oriented Python, following modular design principles for clarity and maintainability. It achieved a pylint quality score of 9.8/10, evidencing robust code structure and commenting standards.
 
-The application accepts structured attack-tree specifications in JSON, each containing hierarchical nodes that represent threats or sub-threats. Each node type contributes to the overall probability and impact using the following logic:
+The application accepts structured attack-tree specifications in JSON (per OWASP guidance, YAML alternatives were evaluated but JSON was prioritised for simplicity and interoperability with existing tooling), each containing hierarchical nodes that represent threats or sub-threats. Each node type contributes to the overall probability and impact using the following logic:
 
 AND nodes: multiply child probabilities and sum impacts.
 OR nodes: compute 1−∏(1−pi​) and take the maximum impact.
@@ -38,9 +38,10 @@ Expected Loss = £287,707.40
 
 Reduction: £461,677.30 (−61.6%) expected loss.
 
-This demonstrates the quantifiable value of layered mitigation. The follow-on exploitation branch credential theft, lateral movement, and data exfiltration remains the dominant contributor to residual risk. Such persistence mirrors ENISA’s (2023) findings on supply-chain threats, where post-compromise lateral movement often amplifies systemic exposure.
+This demonstrates the quantifiable value of layered mitigation. The follow-on exploitation branch credential theft, lateral movement, and data exfiltration remains the dominant contributor to residual risk. Such persistence mirrors ENISA’s (2023, p. 45) findings on supply-chain threats, where post-compromise lateral movement often amplifies systemic exposure; alerts from CISA (2021) further evidenced the propagation of SUNBURST across interconnected government and enterprise networks.
 
 These results provide an interpretable, evidence-based means for management to evaluate the return on security investments and prioritise controls according to financial risk reduction.
+The high aggregate probability (0.9992) represents a conservative estimate based on ENISA (2023, p. 45) risk modelling assumptions for critical supply-chain compromise scenarios.
 
 4. Knowledge and Understanding
 The artefact applies established principles of risk identification, analysis, and modelling within a computational framework. Core theoretical constructs, including Attack Trees (Schneier, 1999), the FAIR model, and the Lockheed Martin Cyber Kill Chain, are embedded in a design consistent with the guidance of ISO/IEC 27005.
@@ -59,7 +60,7 @@ Contextual and empirical insights into the SolarWinds incident were informed by 
 The tool’s simplified aggregation model ensures clarity but introduces several limitations:
 
 Subjectivity of DREAD scoring: Although structured, DREAD remains dependent on expert judgment; probabilistic sampling (e.g., Monte Carlo) could improve confidence intervals.
-Independence assumption: This assumption, while simplifying per Schneier (1999), may underestimate correlations; Bayesian enhancements would address this, aligning with Aven (2016) on advanced risk foundations.
+Independence assumption: This assumption, while simplifying per Schneier (1999), may underestimate correlations; Bayesian enhancements would address this, aligning with Aven (2016) on advanced risk foundations. This aligns with Aven (2016), who emphasises the need to address dependency correlations in advanced risk foundations.
 Static impacts: Financial impacts are modelled as constants, whereas real-world impacts fluctuate over time and context.
 Interface accessibility: A graphical user interface would enhance usability for non-technical executives.
 

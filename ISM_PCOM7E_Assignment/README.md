@@ -12,6 +12,8 @@ It supports two scenarios out of the box:
 * **Pre-mitigation** (original system)
 * **Post-mitigation** (after recommended digitalisation controls)
 
+[Executive Summary](docs/executive_summary.md)
+
 The provided example models the **SolarWinds/SUNBURST** supply-chain compromise.
 
 ---
