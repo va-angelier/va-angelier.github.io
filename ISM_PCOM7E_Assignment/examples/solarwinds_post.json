@@ -1,0 +1,77 @@
+{
+  "id": "root",
+  "label": "Supply-chain compromise: SolarWinds (post-mitigations)",
+  "type": "OR",
+  "children": [
+    {
+      "id": "build_compromise",
+      "label": "Compromise of vendor build/release process (SUNBURST insertion)",
+      "type": "AND",
+      "children": [
+        {
+          "id": "initial_intrusion",
+          "label": "Initial intrusion into vendor environment",
+          "type": "LEAF",
+          "probability": 0.02,
+          "impact": 0
+        },
+        {
+          "id": "malicious_build",
+          "label": "Malicious code inserted into Orion build (trojanised DLL)",
+          "type": "LEAF",
+          "probability": 0.8,
+          "impact": 0
+        },
+        {
+          "id": "signed_release",
+          "label": "Trojanised update packaged and released to customers",
+          "type": "LEAF",
+          "probability": 0.9,
+          "impact": 0
+        }
+      ]
+    },
+    {
+      "id": "update_distribution",
+      "label": "Customers install compromised Orion update",
+      "type": "LEAF",
+      "probability": 0.2,
+      "impact": 0
+    },
+    {
+      "id": "backdoor_activation",
+      "label": "SUNBURST backdoor activates and establishes C2",
+      "type": "LEAF",
+      "probability": 0.15,
+      "impact": 0
+    },
+    {
+      "id": "post_compromise_actions",
+      "label": "Adversary follow-on (credential theft, lateral movement, data exfiltration)",
+      "type": "OR",
+      "children": [
+        {
+          "id": "credential_theft",
+          "label": "Credential theft / privileged account misuse (detected/blocked by EDR)",
+          "type": "LEAF",
+          "probability": 0.2,
+          "impact": 150000
+        },
+        {
+          "id": "lateral_move",
+          "label": "Lateral movement to high-value systems (network segmentation)",
+          "type": "LEAF",
+          "probability": 0.12,
+          "impact": 250000
+        },
+        {
+          "id": "data_exfil",
+          "label": "Data exfiltration (blocked or limited by DLP/monitoring)",
+          "type": "LEAF",
+          "probability": 0.05,
+          "impact": 300000
+        }
+      ]
+    }
+  ]
+}

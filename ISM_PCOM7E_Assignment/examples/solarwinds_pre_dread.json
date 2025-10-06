@@ -1,0 +1,72 @@
+{
+  "id": "root",
+  "label": "Supply-chain compromise: SolarWinds (pre-mitigations, with DREAD)",
+  "type": "OR",
+  "children": [
+    {
+      "id": "build_compromise",
+      "label": "Compromise of vendor build/release process (SUNBURST insertion)",
+      "type": "AND",
+      "children": [
+        {
+          "id": "initial_intrusion",
+          "label": "Initial intrusion into vendor environment",
+          "type": "LEAF",
+          "dread": { "damage": 7, "repro": 6, "exploit": 6, "affected": 8, "discover": 5 }
+        },
+        {
+          "id": "malicious_build",
+          "label": "Malicious code inserted into Orion build (trojanised DLL)",
+          "type": "LEAF",
+          "dread": { "damage": 8, "repro": 8, "exploit": 7, "affected": 8, "discover": 6 }
+        },
+        {
+          "id": "signed_release",
+          "label": "Trojanised update packaged and released to customers",
+          "type": "LEAF",
+          "dread": { "damage": 9, "repro": 8, "exploit": 9, "affected": 9, "discover": 4 }
+        }
+      ]
+    },
+    {
+      "id": "update_distribution",
+      "label": "Customers install compromised Orion update",
+      "type": "LEAF",
+      "dread": { "damage": 8, "repro": 7, "exploit": 6, "affected": 8, "discover": 5 }
+    },
+    {
+      "id": "backdoor_activation",
+      "label": "SUNBURST backdoor activates and establishes C2",
+      "type": "LEAF",
+      "dread": { "damage": 8, "repro": 7, "exploit": 7, "affected": 8, "discover": 6 }
+    },
+    {
+      "id": "post_compromise_actions",
+      "label": "Adversary follow-on (credential theft, lateral movement, data exfiltration)",
+      "type": "OR",
+      "children": [
+        {
+          "id": "credential_theft",
+          "label": "Credential theft / privileged account misuse",
+          "type": "LEAF",
+          "dread": { "damage": 9, "repro": 7, "exploit": 6, "affected": 8, "discover": 9 },
+          "impact": 250000
+        },
+        {
+          "id": "lateral_move",
+          "label": "Lateral movement to high-value systems",
+          "type": "LEAF",
+          "dread": { "damage": 9, "repro": 6, "exploit": 5, "affected": 7, "discover": 8 },
+          "impact": 400000
+        },
+        {
+          "id": "data_exfil",
+          "label": "Data exfiltration (sensitive documents / email)",
+          "type": "LEAF",
+          "dread": { "damage": 10, "repro": 6, "exploit": 6, "affected": 9, "discover": 8 },
+          "impact": 750000
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+[MASTER]
+ignore-patterns=__pycache__,.*\.pyc
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    duplicate-code,
+    wrong-import-position
+
+[FORMAT]
+max-line-length=100
+
+[DESIGN]
+max-attributes=11
+min-public-methods=1
+
+[REPORTS]
+score=yes
+
+[TYPECHECK]
+# tests mogen simpele helpers hebben
+ignored-modules=pytest,unittest

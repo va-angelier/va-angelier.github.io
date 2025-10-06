@@ -1,0 +1,18 @@
+{
+  "id": "root",
+  "label": "Compromise Payment System (pre)",
+  "type": "OR",
+  "children": [
+    { "id": "insider", "label": "Insider access", "type": "LEAF", "probability": 0.02, "impact": 50000 },
+    {
+      "id": "phish",
+      "label": "Phishing -> credential theft",
+      "type": "AND",
+      "children": [
+        { "id": "phish_email", "label": "Spear-phishing email delivered", "type": "LEAF", "probability": 0.1, "impact": 0 },
+        { "id": "cred_misuse", "label": "Credentials used to access system", "type": "LEAF", "probability": 0.3, "impact": 40000 }
+      ]
+    },
+    { "id": "vuln", "label": "Exploit vulnerable service", "type": "LEAF", "probability": 0.01, "impact": 100000 }
+  ]
+}

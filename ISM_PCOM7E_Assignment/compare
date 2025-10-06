@@ -1,0 +1,25 @@
+digraph AttackTree {
+rankdir=TB;
+node [shape=box, style=rounded, fontsize=10];
+"root" [label="Supply-chain compromise: SolarWinds (pre-mitigations, with DREAD)\nOR\np=0.9992\nexp=749384.70", shape=box, style=rounded, fontsize=10];
+"build_compromise" [label="Compromise of vendor build/release process (SUNBURST insertion)\nAND\np=0.3694\nexp=0.00", shape=box, style=rounded, fontsize=10];
+"initial_intrusion" [label="Initial intrusion into vendor environment\nLEAF\np=0.6400\nexp=0.00", shape=box, style=rounded, fontsize=10];
+"malicious_build" [label="Malicious code inserted into Orion build (trojanised DLL)\nLEAF\np=0.7400\nexp=0.00", shape=box, style=rounded, fontsize=10];
+"signed_release" [label="Trojanised update packaged and released to customers\nLEAF\np=0.7800\nexp=0.00", shape=box, style=rounded, fontsize=10];
+"update_distribution" [label="Customers install compromised Orion update\nLEAF\np=0.6800\nexp=0.00", shape=box, style=rounded, fontsize=10];
+"backdoor_activation" [label="SUNBURST backdoor activates and establishes C2\nLEAF\np=0.7200\nexp=0.00", shape=box, style=rounded, fontsize=10];
+"post_compromise_actions" [label="Adversary follow-on (credential theft, lateral movement, data exfiltration)\nOR\np=0.9855\nexp=739110.00", shape=box, style=rounded, fontsize=10];
+"credential_theft" [label="Credential theft / privileged account misuse\nLEAF\np=0.7800\nexp=195000.00", shape=box, style=rounded, fontsize=10];
+"lateral_move" [label="Lateral movement to high-value systems\nLEAF\np=0.7000\nexp=280000.00", shape=box, style=rounded, fontsize=10];
+"data_exfil" [label="Data exfiltration (sensitive documents / email)\nLEAF\np=0.7800\nexp=585000.00", shape=box, style=rounded, fontsize=10];
+"root" -> "build_compromise";
+"build_compromise" -> "initial_intrusion";
+"build_compromise" -> "malicious_build";
+"build_compromise" -> "signed_release";
+"root" -> "update_distribution";
+"root" -> "backdoor_activation";
+"root" -> "post_compromise_actions";
+"post_compromise_actions" -> "credential_theft";
+"post_compromise_actions" -> "lateral_move";
+"post_compromise_actions" -> "data_exfil";
+}
