@@ -215,7 +215,7 @@ pip install pytest
 pytest -q
 ```
 
-> Include screenshots of the CLI output, PNGs, and linter report in your submission ZIP.
+[Screenshot CLI output](docs/Screenshot_1.png)
 
 ---
 
