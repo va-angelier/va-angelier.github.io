@@ -1,0 +1,10 @@
+Debug: Testing navigation
+Debug: Testing navigation during manipulation
+Debug: Testing navigation with obstacle
+Debug: Testing object lookup by ID
+Debug: Testing pick with low battery
+Debug: Testing pick with object not found
+Debug: Testing pick success
+Debug: Testing pick with timeout
+Debug: Testing power management
+Debug: Testing tick command
