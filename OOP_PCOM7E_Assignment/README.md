@@ -1,9 +1,14 @@
 # OOP_PCOM7E Assignment
 
 All documentation lives under **/docs**:
+
 - [Start here](docs/index.md)
 - [Report](docs/REPORT.md)
 - [README (docs)](docs/README.md)
+- [Full Pylint report](docs/pylint.txt)
+- [Radon CC](docs/radon_cc.txt)
+- [Radon MI](docs/radon_mi.txt)
+- [Unit test log](docs/tests.txt)
 
 
 # README Commentary (Rolfe et al., 2001) — 600 words (exact)
@@ -109,14 +114,18 @@ Debug: Testing tick command
 ```
 
 **Run & reproduce**
-bash
-Copy code
-
+```powershell
+# Run the CLI
 python -m robot
+
+# Run tests and capture output
 python -m unittest discover -s robot\tests -p "test_*.py" -v > docs\tests.txt
+
+# Static analysis reports
 .\.venv\Scripts\python -m pylint robot > docs\pylint.txt
 .\.venv\Scripts\python -m radon cc -s -a robot > docs\radon_cc.txt
 .\.venv\Scripts\python -m radon mi -s robot > docs\radon_mi.txt
+```
 
 ## Research integration
 Our A* implementation follows the standard best-first formulation with a consistent heuristic (Russell & Norvig, 2021). Strategy enables planner substitution without controller changes (Gamma et al., 1995). Cyclomatic-complexity discussion relies on McCabe (1976) and Maintainability Index links to OO metrics (Chidamber & Kemerer, 1994). The optional adaptive heuristic demonstrates a small, data-driven extension aligned with the literature while keeping interfaces stable.
