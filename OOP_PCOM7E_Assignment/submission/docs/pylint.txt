@@ -1,0 +1,19 @@
+************* Module robot.app
+robot\app.py:22:54: C0321: More than one statement on a single line (multiple-statements)
+robot\app.py:24:56: C0321: More than one statement on a single line (multiple-statements)
+************* Module robot.services.events
+robot\services\events.py:8:0: C0301: Line too long (102/100) (line-too-long)
+robot\services\events.py:8:69: C0321: More than one statement on a single line (multiple-statements)
+robot\services\events.py:10:36: C0321: More than one statement on a single line (multiple-statements)
+************* Module robot.services.navigation
+robot\services\navigation.py:28:0: C0301: Line too long (102/100) (line-too-long)
+robot\services\navigation.py:29:0: C0301: Line too long (101/100) (line-too-long)
+robot\services\navigation.py:62:24: W0613: Unused argument 'p' (unused-argument)
+************* Module robot.tests.test_navigation
+robot\tests\test_navigation.py:18:4: W0237: Parameter 'p' has been renamed to 'waypoint' in overriding 'SpyNavigator._drive_to' method (arguments-renamed)
+************* Module robot.tests.test_robot_system
+robot\tests\test_robot_system.py:11:4: C0103: Method name "setUp" doesn't conform to snake_case naming style (invalid-name)
+
+------------------------------------------------------------------
+Your code has been rated at 9.89/10 (previous run: 9.76/10, +0.13)
+

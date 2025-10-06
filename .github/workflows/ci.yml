@@ -1,14 +1,74 @@
-name: ci
-on: [push, pull_request]
+name: Python CI (OOP_PCOM7E_Assignment)
+
+on:
+  push:
+    paths:
+      - 'OOP_PCOM7E_Assignment/**'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'OOP_PCOM7E_Assignment/**'
+
 jobs:
-  qa:
+  test-lint-metrics:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: OOP_PCOM7E_Assignment
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: python -m pip install -U pip pylint radon
-      - run: python -m unittest discover -s robot/tests -p "test_*.py" -v
-      - run: pylint robot --score y
-      - run: radon cc -s -a robot
-      - run: radon mi -s robot
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dev tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint radon
+
+      - name: Run unit tests (write docs/tests.txt)
+        run: |
+          mkdir -p docs
+          python -m unittest discover -s robot/tests -p "test_*.py" -v | tee docs/tests.txt
+
+      - name: Pylint (write docs/pylint.txt)
+        run: |
+          pylint robot | tee docs/pylint.txt
+
+      - name: Radon metrics (write docs/radon_cc.txt, docs/radon_mi.txt)
+        run: |
+          radon cc -s -a robot | tee docs/radon_cc.txt
+          radon mi -s robot | tee docs/radon_mi.txt
+
+      # Simple quality gates: Pylint >= 9.5 and no E/F ranks outside tests
+      - name: Quality gates & CI summary
+        run: |
+          set -e
+          SCORE=$(tail -n 2 docs/pylint.txt | sed -n 's/.*rated at \([0-9.]\+\)\/10.*/\1/p' | tail -n1)
+          echo "Pylint score: $SCORE"
+          awk -v s="$SCORE" 'BEGIN{ exit (s>=9.5)?0:1 }'
+          if grep -E " - [EF] \(" docs/radon_cc.txt | grep -v "tests/"; then
+            echo "Found E/F complexity ranks in production code"
+            exit 1
+          fi
+          {
+            echo "## CI Summary"
+            echo "- **Pylint score:** $SCORE"
+            echo "- **Radon CC:** see artifact (top ranks below)"
+            echo ""
+            sed -n '1,80p' docs/radon_cc.txt
+            echo ""
+            echo "**Radon MI (first lines):**"
+            head -n 20 docs/radon_mi.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts (reports)
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: ${{ github.workspace }}/OOP_PCOM7E_Assignment/docs/*.txt
