@@ -215,8 +215,11 @@ pip install pytest
 pytest -q
 ```
 
-[Screenshot CLI output](docs/Screenshot_1.png)
+### Graphics
 
+[Compare PRE incident](compare-pre.png)
+[Compare POST incident](compare-post.png)
+[Screenshot CLI output](docs/Screenshot_1.png)
 ---
 
 ## Troubleshooting
