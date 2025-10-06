@@ -43,6 +43,7 @@ jobs:
       - name: Radon metrics (write docs/radon_cc.txt, docs/radon_mi.txt)
         run: |
           radon cc -s -a robot | tee docs/radon_cc.txt
+          radon cc -j robot > docs/radon_cc.json
           radon mi -s robot | tee docs/radon_mi.txt
 
       # Simple quality gates: Pylint >= 9.5 and no E/F ranks outside tests
