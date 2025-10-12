@@ -4,7 +4,6 @@ from __future__ import annotations
 from robot.controller import Robot
 from robot.interface.cli import CLI
 
-
 def main() -> None:
     """Run a simple interactive CLI session."""
     robot = Robot("R1")

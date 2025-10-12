@@ -6,9 +6,7 @@ import math
 from abc import ABC, abstractmethod
 from collections import deque
 from typing import Deque, Dict, List, Optional, Tuple
-
 from robot.domain.models import Waypoint, Environment
-
 
 class PathPlanner(ABC):
     """Abstract base for path-planning strategies."""

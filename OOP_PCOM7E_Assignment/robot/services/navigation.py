@@ -3,10 +3,8 @@ from __future__ import annotations
 
 from collections import deque
 from typing import Deque, Optional, Tuple, Iterable
-
 from robot.domain.models import Waypoint, Environment
 from robot.services.planning import PathPlanner, AStarPlanner
-
 
 class Navigator:
     """Orchestrates planning via an injected PathPlanner."""

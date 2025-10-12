@@ -1,8 +1,6 @@
 """Actuator adapters: manipulator and communicator."""
 from __future__ import annotations
-
 from typing import List
-
 
 class Manipulator:
     """Demo manipulator API (pick/undo)."""

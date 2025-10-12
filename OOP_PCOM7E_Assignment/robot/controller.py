@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from typing import Dict, Optional
-
 from robot.domain.models import RobotState, Waypoint, Environment, MemoryStore
 from robot.services.navigation import Navigator
 from robot.services.actuators import Manipulator, Communicator
