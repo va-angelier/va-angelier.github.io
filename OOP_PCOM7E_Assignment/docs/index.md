@@ -1,20 +1,31 @@
-# Humanoid Robot – System Design
+# MSc Computer Science – OOP_PCOM7E e-Portfolio
+**Student:** Victor Angelier  **Module:** Object-Oriented Programming  
+**Submission date:** 20 October 2025  **Word count:** ≈ 3 500 (+ evidence)
 
-Welkom! Dit is de documentatie voor mijn OOP_PCOM7E-assignment.
+## Overview
+This e-portfolio documents the design, implementation, and evaluation of the *Humanoid Robot* software system developed throughout Units 8–12.  
+It demonstrates progressive learning outcomes across UML design, testing, packaging, and design-pattern application.
 
-- **Project README** → [README](README.md)
-- **Summative Report (500w rationale incl.)** → [REPORT](REPORT.md)
-- **Design Rationale (uitgebreid)** → [DESIGN_RATIONALE](DESIGN_RATIONALE.md)
-- **Changelog** → [CHANGELOG](CHANGELOG.md)
+### Contents
+1. [README – 600 word reflection](README.md)  
+2. [REPORT – System Design Proposal (+ Rationale)](REPORT.md)  
+3. [Design Rationale (extended)](Design_Rationale.md)  
+4. [Code Quality Report (Unit 10 Testing in Practice)](Code_Quality_Report.md)  
+5. [Final Reflection (Unit 12)](Reflection.md)
+
+---
 
 ## UML Artefacts
-- Class → ![Class Diagram](assets/img/class_diagram.png)
-- Sequence → ![Sequence Diagram](assets/img/sequence_diagram.png)
-- Activity (navigate/pick/errors) → ![Nav](assets/img/activity_navigate.png), ![Pick](assets/img/activity_pick.png), ![Errors](assets/img/activity_errors.png)
-- State → ![State](assets/img/state_diagram.png)
-- Component → ![Component](assets/img/component_diagram.png)
-- Deployment → ![Deployment](assets/img/deployment_diagram.png)
+*(unchanged from your current version)*  
+- Class → ![Class Diagram](assets/img/class_diagram.png)  
+- Sequence → ![Sequence Diagram](assets/img/sequence_diagram.png)  
+- Activity (navigate/pick/errors) → ![Nav](assets/img/activity_navigate.png), ![Pick](assets/img/activity_pick.png), ![Errors](assets/img/activity_errors.png)  
+- State → ![State](assets/img/state_diagram.png)  
+- Component → ![Component](assets/img/component_diagram.png)  
+- Deployment → ![Deployment](assets/img/deployment_diagram.png)  
 - State Pattern → ![State](assets/img/state-pattern.png)
+
+---
 
 ## Run & Validate
 ```bash
