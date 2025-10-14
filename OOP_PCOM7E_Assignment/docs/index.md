@@ -19,7 +19,9 @@ It demonstrates progressive learning outcomes across UML design, testing, packag
 *(unchanged from your current version)*  
 - Class → ![Class Diagram](assets/img/class_diagram.png)  
 - Sequence → ![Sequence Diagram](assets/img/sequence_diagram.png)  
-- Activity (navigate/pick/errors) → ![Nav](assets/img/activity_navigate.png), ![Pick](assets/img/activity_pick.png), ![Errors](assets/img/activity_errors.png)  
+- Activity → [Nav](assets/img/navigation_activity_diagram.png)
+- Pick → [Pick](assets/img/activity-diagram-pickup.png) -> 
+- Error → [Errors](assets/img/activity-diagram-errors.png)
 - State → ![State](assets/img/state_diagram.png)  
 - Component → ![Component](assets/img/component_diagram.png)  
 - Deployment → ![Deployment](assets/img/deployment_diagram.png)  
