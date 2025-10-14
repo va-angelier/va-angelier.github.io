@@ -16,15 +16,15 @@ It demonstrates progressive learning outcomes across UML design, testing, packag
 ---
 
 ## UML Artefacts
-*(unchanged from your current version)*  
-- Class → ![Class Diagram](assets/img/class_diagram.png)  
-- Sequence → ![Sequence Diagram](assets/img/sequence_diagram.png)  
+- Class → ![Class Diagram](assets/img/class_diagram.png)
+- Sequence → ![Sequence Diagram](assets/img/sequence_diagram.png) 
 - Activity → [Nav](assets/img/navigation_activity_diagram.png)
-- Pick → [Pick](assets/img/activity-diagram-pickup.png) -> 
+- Pick → [Pick](assets/img/activity-diagram-pickup.png)
 - Error → [Errors](assets/img/activity-diagram-errors.png)
-- State → ![State](assets/img/state_diagram.png)  
-- Component → ![Component](assets/img/component_diagram.png)  
-- Deployment → ![Deployment](assets/img/deployment_diagram.png)  
+- Error Handling → [Errors](assets/img/error_handling_diagram.png)
+- State → ![State](assets/img/state_diagram.png)
+- Component → ![Component](assets/img/component_diagram.png)
+- Deployment → ![Deployment](assets/img/deployment_diagram.png)
 - State Pattern → ![State](assets/img/state-pattern.png)
 
 ---
