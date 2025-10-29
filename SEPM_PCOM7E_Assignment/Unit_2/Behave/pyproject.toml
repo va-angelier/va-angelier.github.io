@@ -1,0 +1,6 @@
+[project]
+name = "SEPM-BDD"
+dependencies = [
+    "behave @ git+https://github.com/behave/behave.git@v1.3.1",
+    # OR: "behave[develop] @ git+https://github.com/behave/behave.git@main",
+]
