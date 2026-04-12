@@ -1,0 +1,58 @@
+@startuml
+title Secure Online Retailer - Class Diagram
+
+class Customer {
+  +customer_id: str
+  +email: str
+  +register()
+  +login()
+}
+
+class Product {
+  +product_id: str
+  +name: str
+  +price: float
+}
+
+class Order {
+  +order_id: str
+  +status: str
+  +total: float
+  +create()
+  +add_item()
+  +checkout()
+}
+
+class OrderItem {
+  +qty: int
+  +unit_price: float
+}
+
+class AuthService {
+  +authenticate(email, password)
+  +issue_token()
+  +verify_token()
+}
+
+class SessionManager {
+  +active_sessions: set
+  +create_session()
+  +invalidate_session()
+}
+
+class SecurityConfig {
+  +secure_mode: bool
+  +rate_limit_enabled: bool
+  +input_validation_enabled: bool
+  +session_enforcement_enabled: bool
+}
+
+Customer "1" --> "0..*" Order : places
+Order "1" --> "1..*" OrderItem : contains
+OrderItem "*" --> "1" Product : refers_to
+
+AuthService --> SessionManager : manages
+AuthService --> SecurityConfig : reads
+SessionManager --> SecurityConfig : reads
+
+@enduml

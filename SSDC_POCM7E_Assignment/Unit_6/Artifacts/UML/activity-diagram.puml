@@ -1,0 +1,44 @@
+@startuml
+title Activity - Place Order (Validation, Logging, secure_mode)
+
+start
+
+:Receive "Place Order" request;
+:Read SecurityConfig.secure_mode;
+
+if (secure_mode = true?) then (yes)
+  :Check session token;
+  if (Valid session?) then (yes)
+  else (no)
+    :Log invalid session;
+    stop
+  endif
+
+  :Validate input (basket, address, qty);
+  if (Input valid?) then (yes)
+  else (no)
+    :Log validation failure;
+    stop
+  endif
+
+  :Apply request throttling check;
+  if (Within limits?) then (yes)
+  else (no)
+    :Log throttling event;
+    stop
+  endif
+
+else (no)
+  :Check session token (basic);
+  :Skip strict validation;
+  :Skip throttling;
+endif
+
+:Calculate totals;
+:Create Order + OrderItems;
+:Persist Order to storage;
+:Log order creation;
+:Return confirmation;
+
+stop
+@enduml

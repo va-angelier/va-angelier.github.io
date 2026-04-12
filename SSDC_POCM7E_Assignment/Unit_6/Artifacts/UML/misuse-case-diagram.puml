@@ -1,0 +1,53 @@
+@startuml
+title Secure Online Retailer - Misuse Case Diagram
+
+left to right direction
+
+actor "Customer" as Customer
+actor "Admin" as Admin
+actor "Hacker" as Hacker
+
+rectangle "E-Commerce Platform" {
+  (Register) as UC_Register
+  (Login) as UC_Login
+  (Browse catalogue) as UC_Browse
+  (Manage basket) as UC_Basket
+  (Place order) as UC_Order
+  (Admin: Manage products) as UC_AdminProducts
+
+  (Rate limit & lockout) as UC_RateLimit
+  (Input validation) as UC_Validation
+  (Authorisation checks (RBAC)) as UC_RBAC
+  (Throttling & request limits) as UC_Throttle
+  (Security logging) as UC_Logging
+
+  (Brute force login) as MU_BruteForce <<misuse>>
+  (API injection) as MU_Injection <<misuse>>
+  (DoS via request flood) as MU_DoS <<misuse>>
+  (Privilege escalation) as MU_EoP <<misuse>>
+}
+
+Customer --> UC_Register
+Customer --> UC_Login
+Customer --> UC_Browse
+Customer --> UC_Basket
+Customer --> UC_Order
+
+Admin --> UC_Login
+Admin --> UC_AdminProducts
+
+Hacker --> MU_BruteForce
+Hacker --> MU_Injection
+Hacker --> MU_DoS
+Hacker --> MU_EoP
+
+MU_BruteForce .> UC_RateLimit : mitigated by
+MU_Injection .> UC_Validation : mitigated by
+MU_DoS .> UC_Throttle : mitigated by
+MU_EoP .> UC_RBAC : mitigated by
+
+UC_Login .> UC_Logging : includes
+UC_Order .> UC_Logging : includes
+UC_AdminProducts .> UC_Logging : includes
+
+@enduml

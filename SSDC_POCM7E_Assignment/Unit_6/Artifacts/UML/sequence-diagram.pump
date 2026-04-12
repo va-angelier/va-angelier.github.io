@@ -1,0 +1,74 @@
+@startuml
+title Login Sequence - secure_mode ON vs OFF
+
+actor User
+actor Hacker
+boundary "Frontend (CLI/Web)" as FE
+control "RetailAPI" as API
+control "AuthService" as AUTH
+control "SessionManager" as SESS
+control "SecurityConfig" as CFG
+database "UserStore" as DB
+control "Logger" as LOG
+
+== Legitimate Login ==
+User -> FE : enter email + password
+FE -> API : POST /login (credentials)
+API -> CFG : read secure_mode
+CFG --> API : secure_mode = true/false
+
+alt secure_mode = true
+  API -> AUTH : authenticate(credentials)
+  AUTH -> LOG : log auth attempt
+  AUTH -> DB : lookup user by email
+  DB --> AUTH : user record (hash, salt)
+  AUTH -> AUTH : verify password hash
+  alt authentication failed
+    AUTH -> LOG : log failed login
+    AUTH --> API : reject
+    API --> FE : 401 Unauthorized
+  else authentication success
+    AUTH -> SESS : create_session(user_id)
+    SESS -> LOG : log session issued
+    SESS --> AUTH : session token
+    AUTH --> API : token
+    API --> FE : 200 OK (token)
+  end
+else secure_mode = false
+  API -> AUTH : authenticate(credentials)
+  AUTH -> DB : lookup user by email
+  DB --> AUTH : user record
+  AUTH -> AUTH : verify password hash
+  AUTH -> SESS : create_session(user_id)
+  SESS --> AUTH : session token
+  AUTH --> API : token
+  API --> FE : 200 OK (token)
+end
+
+== Brute Force Attempt ==
+Hacker -> FE : repeated credential guesses
+loop many attempts
+  FE -> API : POST /login (credentials)
+  API -> CFG : read secure_mode
+  CFG --> API : secure_mode = true/false
+
+  alt secure_mode = true
+    API -> AUTH : rate_limit_check(identity/IP)
+    alt rate limit exceeded
+      AUTH -> LOG : log rate-limit event
+      AUTH --> API : reject (429)
+      API --> FE : 429 Too Many Requests
+    else allowed
+      API -> AUTH : authenticate(credentials)
+      AUTH -> LOG : log failed login
+      AUTH --> API : reject (401)
+      API --> FE : 401 Unauthorized
+    end
+  else secure_mode = false
+    API -> AUTH : authenticate(credentials)
+    AUTH --> API : reject (401)
+    API --> FE : 401 Unauthorized
+  end
+end
+
+@enduml
