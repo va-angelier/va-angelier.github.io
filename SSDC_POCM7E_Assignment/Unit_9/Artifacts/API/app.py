@@ -3,7 +3,7 @@ Secure Online Retailer API / CLI prototype for Unit 11.
 
 This module provides:
 - secure account creation
-- authentication and session management
+- authentication and token management
 - role-based access control
 - CRUD operations for records
 - security mode ON/OFF behaviour
@@ -25,6 +25,8 @@ from datetime import UTC, datetime, timedelta
 from functools import wraps
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
+
 
 # ---------------------------------------------------------------------
 # Configuration
@@ -39,6 +41,12 @@ MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 5
 
 app = Flask(__name__)
+CORS(
+    app,
+    resources={r"/api/*": {"origins": "http://localhost:5173"}},
+    allow_headers=["Content-Type", "Accept", "X-API-Key", "X-Session-Token"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,13 +58,13 @@ logging.basicConfig(
 # Required data structures:
 # - dict: users
 # - list: records / orders / events
-# - set: active sessions
+# - dict: active sessions
 # ---------------------------------------------------------------------
 
 users = {}
 records = []
 security_events = []
-active_sessions = set()
+active_sessions = {}
 failed_login_attempts = {}
 locked_accounts = {}
 next_record_id = 1
@@ -373,6 +381,29 @@ def is_suspicious_input(value):
     return any(pattern.lower() in lowered for pattern in suspicious_patterns)
 
 
+def get_session_token():
+    """
+    Extract the session token from the request headers.
+
+    Returns:
+        str | None: Session token if present.
+    """
+    return request.headers.get("X-Session-Token")
+
+
+def get_session_data():
+    """
+    Resolve session data from the in-memory session store.
+
+    Returns:
+        dict | None: Session payload or None if invalid.
+    """
+    token = get_session_token()
+    if not token:
+        return None
+    return active_sessions.get(token)
+
+
 # ---------------------------------------------------------------------
 # Decorators
 # ---------------------------------------------------------------------
@@ -405,15 +436,23 @@ def require_api_key(func):
 def require_session(func):
     """
     Require a valid session token for protected user endpoints.
+    Attach session context to the request for downstream use.
     """
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not SECURITY_ENABLED:
+            request.session_context = {
+                "username": "insecure-mode",
+                "role": "admin",
+                "token": None,
+            }
             return func(*args, **kwargs)
 
         token = request.headers.get("X-Session-Token")
-        if not token or token not in active_sessions:
+        session_data = active_sessions.get(token)
+
+        if not token or not session_data:
             log_security_event(
                 "session_check",
                 "failure",
@@ -422,6 +461,12 @@ def require_session(func):
             )
             return jsonify({"error": "Valid session token required."}), 401
 
+        request.session_context = {
+            "username": session_data["username"],
+            "role": session_data["role"],
+            "token": token,
+        }
+
         return func(*args, **kwargs)
 
     return wrapper
@@ -429,7 +474,7 @@ def require_session(func):
 
 def require_role(required_role):
     """
-    Enforce simple role-based access control.
+    Enforce simple role-based access control based on session token.
 
     Args:
         required_role (str): Required role.
@@ -441,15 +486,16 @@ def require_role(required_role):
             if not SECURITY_ENABLED:
                 return func(*args, **kwargs)
 
-            username = request.headers.get("X-Username")
-            if not username or username not in users:
+            session_context = getattr(request, "session_context", None)
+
+            if not session_context:
                 return jsonify({"error": "User context is required."}), 401
 
-            if users[username]["role"] != required_role:
+            if session_context["role"] != required_role:
                 log_security_event(
                     "authorization",
                     "failure",
-                    username,
+                    session_context["username"],
                     f"Required role: {required_role}",
                 )
                 return jsonify({"error": "Forbidden"}), 403
@@ -533,6 +579,9 @@ def login():
 
     username = username.strip()
 
+    if not username or not password:
+        return jsonify({"error": "Username and password are required."}), 400
+
     if username not in users:
         log_security_event(
             "authentication",
@@ -558,8 +607,13 @@ def login():
         return jsonify({"error": "Invalid credentials."}), 401
 
     failed_login_attempts[username] = 0
-    session_token = secrets.token_hex(16)
-    active_sessions.add(session_token)
+
+    session_token = secrets.token_hex(32)
+    active_sessions[session_token] = {
+        "username": username,
+        "role": user["role"],
+        "created_at": current_timestamp(),
+    }
 
     log_security_event(
         "authentication",
@@ -574,8 +628,49 @@ def login():
             "session_token": session_token,
             "username": username,
             "role": user["role"],
+            "secure_mode": SECURITY_ENABLED,
         }
     ), 200
+
+
+@app.route("/api/me", methods=["GET"])
+@require_session
+def get_current_user():
+    """
+    Return the currently authenticated user based on the session token.
+    """
+    session_context = request.session_context
+
+    return jsonify(
+        {
+            "authenticated": True,
+            "username": session_context["username"],
+            "role": session_context["role"],
+            "secure_mode": SECURITY_ENABLED,
+        }
+    ), 200
+
+
+@app.route("/api/logout", methods=["POST"])
+@require_session
+def logout():
+    """
+    Invalidate the current session token.
+    """
+    session_context = request.session_context
+    token = session_context["token"]
+
+    if token in active_sessions:
+        del active_sessions[token]
+
+    log_security_event(
+        "logout",
+        "success",
+        session_context["username"],
+        "Session revoked.",
+    )
+
+    return jsonify({"message": "Logout successful."}), 200
 
 
 @app.route("/api/profile/<username>", methods=["GET"])
@@ -624,6 +719,15 @@ def delete_user(username):
     del users[username]
     failed_login_attempts.pop(username, None)
     locked_accounts.pop(username, None)
+
+    tokens_to_delete = [
+        token
+        for token, session_data in active_sessions.items()
+        if session_data["username"] == username
+    ]
+
+    for token in tokens_to_delete:
+        del active_sessions[token]
 
     log_security_event(
         "user_deletion",
@@ -679,12 +783,11 @@ def create_record():
     log_security_event(
         "record_create",
         "success",
-        "",
+        request.session_context["username"],
         f"Record {record['id']} created.",
     )
 
     return jsonify(record), 201
-
 
 @app.route("/api/records", methods=["GET"])
 def get_records():
@@ -741,7 +844,7 @@ def update_record(record_id):
         log_security_event(
             "record_update",
             "failure",
-            "",
+            request.session_context["username"],
             f"Validation failed for record {record_id}.",
         )
         return jsonify(error), 400
@@ -753,7 +856,7 @@ def update_record(record_id):
     log_security_event(
         "record_update",
         "success",
-        "",
+        request.session_context["username"],
         f"Record {record_id} updated.",
     )
 
@@ -784,7 +887,7 @@ def delete_record(record_id):
     log_security_event(
         "record_delete",
         "success",
-        "",
+        request.session_context["username"],
         f"Record {record_id} deleted.",
     )
 

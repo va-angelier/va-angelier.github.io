@@ -10,6 +10,12 @@ The application includes structured JSON responses, consistent endpoint naming, 
 
 A current limitation is that records are not persistent and are therefore lost when the application restarts. In a production environment, this implementation would need to be extended with persistent storage, stronger secret management and more mature authentication and authorisation mechanisms.
 
+The system ontology consists of four core entities:
+- User
+- Record
+- Session
+- Security Event
+
 ---
 
 ## **Security Design Decisions**
@@ -77,22 +83,43 @@ pip install \-r requirements.txt
 
 ---
 
-## **Running the API**
+## Running the API
 
-python app.py
+The API is started using explicit command-line flags to control runtime behaviour.
+
+To start the API in secure mode with a default administrator account:
+
+python app.py --seed-admin --run-api --secure on
+
+To start the API with security controls disabled (for comparison or testing):
+
+python app.py --seed-admin --run-api --secure off
+
+The API will be available at:
+
+http://127.0.0.1:5000/api
+
+## Default Admin Account
+
+When using the --seed-admin flag, the following default account is created:
+
+Username: admin  
+Password: AdminPass123!
+
+Because the application uses in-memory storage, this account must be recreated after each restart.
 
 ---
 
 ## **Running the Test Suite**
 
-pytest
+python -m pytest
 
 ---
 
 ## **Running Code Quality Checks**
 
-flake8 .  
-pylint app.py
+python -m flake8 .  
+python -m pylint app.py
 
 ---
 
@@ -119,7 +146,7 @@ The automated test suite covers:
 
 All tests were executed successfully:
 
-32 passed
+48 passed
 
 Importantly, the test suite includes negative and boundary scenarios, ensuring correct behaviour under invalid and adversarial input conditions.
 
@@ -143,7 +170,7 @@ These results confirm correct functional and security behaviour.
 
 ## **Code Quality Evidence**
 
-Code quality was validated using flake8 and pylint to ensure compliance with PEP-8 and general Python best practices. Any identified issues were resolved prior to submission.
+Flake8 was used to analyse code quality and adherence to PEP 8. Minor line-length warnings (E501) remain, which do not affect functionality or security. These were accepted as part of the development trade-off to maintain readability of certain validation and logging statements.
 
 This contributes indirectly to security by improving maintainability and reducing the likelihood of hidden defects.
 
@@ -182,3 +209,28 @@ This implementation demonstrates a secure and well-structured CRUD API with inpu
 
 Although simplified for academic purposes, the system provides a strong foundation for extension into a production-ready service aligned with industry security practices.
 
+
+## Integration with Frontend (Unit 11)
+
+A separate React-based user interface was developed in Unit 11 to interact with this API.
+
+The frontend provides:
+
+- user registration and login
+- dashboard interaction with records
+- role-based access to administrative functionality
+
+The frontend communicates with the API using HTTP requests and includes:
+
+- X-Session-Token for authentication
+- X-API-Key for protected operations
+
+The API uses a session token model for authentication.
+
+Clients include the X-Session-Token header in each request. The server resolves the associated user and role from the session store, ensuring that identity cannot be spoofed by the client.
+
+This approach prevents client-side manipulation of identity and enforces server-side trust boundaries.
+
+Because the frontend runs on a different port during development, integration may require either CORS configuration in Flask or a proxy configuration in the frontend development server.
+
+This separation of concerns reflects a more realistic application architecture, where the API and user interface are decoupled.
