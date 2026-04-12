@@ -113,6 +113,20 @@ ReDoS cannot therefore be eliminated through a single technical measure. It must
 
 From a Secure SDLC perspective, ReDoS represents a **design-phase risk** rather than merely an implementation defect. Pattern complexity and engine semantics should be evaluated during architectural design and code review, not solely tested post-deployment. Regex constitutes executable logic with computational complexity implications; security assessment must therefore consider algorithmic behaviour alongside functional correctness.
 
+## **6\. Integration within Secure Software Development**
+
+Regular expression vulnerabilities such as ReDoS must be understood within the broader Secure Software Development Life Cycle (SDLC). Rather than being treated as isolated coding defects, they represent design-time risks that should be identified and mitigated across multiple development stages.
+
+During the design phase, regex patterns should be evaluated for computational complexity and suitability, particularly where input validation is used as a security control. This aligns with the principle that security must be embedded early, rather than retrofitted after implementation (Olmsted, 2024).
+
+In the implementation phase, developers should adhere to secure coding practices, avoiding ambiguous constructs and selecting appropriate regex engines where predictable execution behaviour is required.
+
+Within the testing phase, specification-based testing techniques such as boundary value analysis are critical. ReDoS vulnerabilities typically manifest under extreme or adversarial inputs rather than normal use cases, meaning traditional functional testing alone is insufficient.
+
+Finally, during verification, both static and dynamic analysis tools can be applied. Static analysis may identify structurally vulnerable patterns, while dynamic approaches—such as those used in ReDoSHunter—validate runtime behaviour under malicious input conditions (Li et al., 2021).
+
+From a security perspective, ReDoS primarily impacts availability, reinforcing that secure software must balance confidentiality, integrity, and availability equally. This highlights that performance characteristics are not merely operational concerns, but integral to security assurance.
+
 ---
 
 ## **Conclusion**

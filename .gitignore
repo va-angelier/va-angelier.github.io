@@ -7,3 +7,6 @@ __pycache__/
 *.gz
 **/**/.venv/
 **/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
