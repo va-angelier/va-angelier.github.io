@@ -74,4 +74,4 @@ class User(Resource):
       
 api.add_resource(User, "/user/<string:name>")
  
-app.run(debug=True)
+app.run(debug=False)

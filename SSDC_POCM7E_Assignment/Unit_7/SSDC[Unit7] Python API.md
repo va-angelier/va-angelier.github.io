@@ -28,7 +28,7 @@ This output confirms that the API server is running locally on port **5000**. A 
 
 **Figure 1\.** Flask development server running locally.
 
-![][image1]
+![][Evidence/Screenshot_14.png]
 
 # **Behaviour of the API When Queried**
 
@@ -36,7 +36,7 @@ The exercise demonstrates the API using the command:
 
 w3m http://127.0.0.1:5000/user/Ann
 
-![][image2]
+![][Evidence/Screenshot_1.png]
 
 The `w3m` tool is a lightweight **text-based web browser** that can send HTTP requests directly from the terminal. In this case it sends a **GET request** to the API endpoint.
 
@@ -50,7 +50,7 @@ If the following command is executed instead:
 
 w3m http://127.0.0.1:5000/user/Adam
 
-![][image3]
+![][Evidence/Screenshot_1.png]
 
 the API returns the message:
 
@@ -76,7 +76,7 @@ which returns the JSON response:
 
 {"name": "Ann", "age": 32, "occupation": "Doctor"}
 
-![][image4]
+![][Evidence/Screenshot_3.png]
 
 Using `curl` also allows developers to test other API operations.
 
@@ -88,13 +88,13 @@ curl \-X POST http://127.0.0.1:5000/user/Adam \\
 
 \-d "occupation=Engineer"
 
-![][image5]
+![][Evidence/Screenshot_5.png]
 
 Example **DELETE request**:
 
 curl \-X DELETE http://127.0.0.1:5000/user/Ann
 
-![][image6]
+![][Evidence/Screenshot_6.png]
 
 Because of this flexibility, `curl` is widely used in professional software development and DevOps environments for testing RESTful APIs.
 
@@ -127,7 +127,7 @@ The application is started with:
 
 app.run(debug=True)
 
-![][image7]
+![][Evidence/Screenshot_8.png]
 
 While debug mode is useful during development, it should never be enabled in production environments. Debug mode can expose internal application details, stack traces, and other sensitive information that could assist an attacker.
 
